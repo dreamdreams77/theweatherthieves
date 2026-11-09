@@ -1,0 +1,14 @@
+{
+  "name": "the-weather-thieves",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "THE WEATHER THIEVES - a 3D browser game about restoring stolen weather (Chapter 1 vertical slice).",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": { "three": "0.170.0" },
+  "devDependencies": { "vite": "^5.4.0" }
+}

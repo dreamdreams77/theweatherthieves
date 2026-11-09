@@ -1,0 +1,3 @@
+(() => { const g = __game, out = []; let calls = 0, tris = 0;
+  g.scene.traverse((o) => { if (!o.isMesh || !o.visible) return; const geo = o.geometry; const n = (geo.index ? geo.index.count : geo.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1); tris += n; calls++; out.push([Math.round(n), o.isInstancedMesh ? 'inst' + o.count : 'mesh', o.parent?.type, geo.type, o.name || '']); });
+  out.sort((a, b) => b[0] - a[0]); return { meshes: calls, tris: Math.round(tris), top: out.slice(0, 25).map((x) => x.join(' ')), info: [g.renderer.info.render.calls, g.renderer.info.render.triangles] }; })()
