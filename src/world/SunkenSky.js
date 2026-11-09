@@ -70,7 +70,7 @@ export class SunkenSky {
   // ---------------------------------------------------------------- HOME
   buildHome() {
     const { H, scene, terrain, weather, q } = this; const avoid = [[-6, 4, 3.2], [7.5, -3, 4], [-3, -8, 4.2], [0, 8, 2.5], [-11, -6, 2], [11, 5, 2.8]];
-    const cot = Props.cottage(); this.place(cot, H, -6.5, 4, 0.7, 1, 0); terrain.addCollider({ x: -6.5, z: 4, r: 2.6, y0: -2, y1: 10 }); this.cottage = cot;
+    const cot = Props.cottage(); this.place(cot, H, -6.5, 4, 0.7, 1, 0); terrain.addCollider({ x: -6.5, z: 4, r: 2.6, y0: -2, y1: 10, cam: { r: 2.7, y0: this.on(H, -6.5, 4) - 1, y1: this.on(H, -6.5, 4) + 8 } }); this.cottage = cot;
     this.smokePos = new THREE.Vector3(-6.5, 0, 4).add(cot.userData.smoke.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.7)); this.smokePos.y += H.heightAt(-6.5, 4);
     this.updaters.push((dt, t) => { cot.userData.anemometer.rotation.y += dt * (1 + weather.force(this.smokePos).length() * 1.6); });
     // glowing lantern posts along the path
@@ -82,7 +82,7 @@ export class SunkenSky {
     scene.add(mesh(sp.merge(), vcMat({ roughness: 0.9 })));
     // bloom garden: standing stones + three Lanternblooms
     this.blooms = []; const bp = [[6.2, -1.2], [9.4, -3.2], [6.8, -6.2]];
-    bp.forEach(([x, z], i) => { const parts = Flora.lanternbloom(); const b = new BloomPlant(parts, new THREE.Vector3(x, H.heightAt(x, z), z), i); b.group.rotation.y = i * 2; scene.add(b.group); b.pos.set(x, H.heightAt(x, z) + 1.2, z); b.radius = 0.9; weather.register(b); this.blooms.push(b); this.updaters.push((dt, t) => b.update(dt, t)); });
+    bp.forEach(([x, z], i) => { const parts = Flora.lanternbloom(); const b = new BloomPlant(parts, new THREE.Vector3(x, H.heightAt(x, z), z), i); b.group.rotation.y = i * 2; scene.add(b.group); b.pos.set(x, H.heightAt(x, z) + 1.2, z); b.radius = 1.4; weather.register(b); this.blooms.push(b); this.updaters.push((dt, t) => b.update(dt, t)); });
     const st = new Parts(); const r = rng(8); for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU, x = 7.8 + Math.cos(a) * 3.6, z = -3.5 + Math.sin(a) * 3.6, y = H.heightAt(x, z); if (y === -Infinity) continue; const hh = 1.1 + r() * 1.2; st.add(new THREE.BoxGeometry(0.7, hh, 0.45), 0xa59cae, { p: [x, y + hh / 2 - 0.1, z], r: [0.04, -a + r() * 0.2, 0.05], jitter: 0.25 }); terrain.addCollider({ x, z, r: 0.35 }); }
     scene.add(mesh(st.merge(), vcMat({ roughness: 0.95, flatShading: true })));
     // pond (freezable) with tiny rock island + glint
@@ -181,7 +181,7 @@ export class SunkenSky {
     for (let i = 0; i < 3; i++) { const a = i * 2.09; const cl = mesh(new THREE.TorusGeometry(1.6, 0.06, 6, 24, Math.PI * 0.5), brass); cl.rotation.set(Math.PI / 2, 0, a); cl.position.y = 2.0 + i * 0.5; jg.add(cl); }
     this.seals = []; for (let i = 0; i < 3; i++) { const a = i * 2.09 + 0.6; const s = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), new THREE.MeshStandardMaterial({ color: 0x555060, emissive: 0xff5a3a, emissiveIntensity: 0.1 })); s.position.set(Math.cos(a) * 1.95, 1.4, Math.sin(a) * 1.95); jg.add(s); this.seals.push(s); }
     this.sunny = new Sunny(); this.sunny.group.position.set(0, 2.2, 0); jg.add(this.sunny.group); this.updaters.push((dt, t) => { this.sunny.update(dt, t); if (!this.sunnyFree) this.sunny.group.position.y = 2.1 + Math.sin(t * 1.6) * 0.15; });
-    terrain.addCollider({ x: jp.x, z: jp.z, r: 2.2, y0: jp.y - 1, y1: jp.y + 6 });
+    terrain.addCollider({ x: jp.x, z: jp.z, r: 2.2, y0: jp.y - 1, y1: jp.y + 6, cam: { r: 1.9, y0: jp.y, y1: jp.y + 6 } });
     // pipes draining stolen weather off the island
     const pp = new Parts(); for (const a of [0.6, 2.5, 4.4]) pp.add(tube([[Math.cos(a) * 1.9, 0.3, Math.sin(a) * 1.9], [Math.cos(a) * 4, 0.2, Math.sin(a) * 4], [Math.cos(a) * 8, -0.6, Math.sin(a) * 8], [Math.cos(a) * 11.5, -1.5, Math.sin(a) * 11.5]], 0.22, 16, 8), 0x7a7480, { jitter: 0.2 });
     const pipes = mesh(pp.merge(), vcMat({ metalness: 0.6, roughness: 0.4 })); pipes.position.copy(jp); scene.add(pipes);
@@ -231,7 +231,7 @@ export class SunkenSky {
   // ---------------------------------------------------------------- CLOUDS & CREATURES
   buildClouds() {
     const { scene, weather, q } = this; const mk = (o) => weather.addCloud(new Cloud({ ...o, scene, quality: q }));
-    this.fenCloud = mk({ id: 'fen', name: 'Drizzle', pos: new THREE.Vector3(0, 4, 8), size: 0.85, seed: 3, personal: true });
+    this.fenCloud = mk({ id: 'fen', name: 'Drizzle', pos: new THREE.Vector3(0, 4, 8), size: 1.0, seed: 3, personal: true });
     this.fenCloud.face.set('sad'); this.fenCloud.drift.set(0, 0, 0);
     this.gertrude = mk({ id: 'gertrude', name: 'Gertrude', pos: new THREE.Vector3(-31, 12.6, -23), size: 1.5, seed: 17 }); this.gertrude.face.set('smug'); this.gertrude.drift.set(0, 0, 0); this.gertrude.stubborn = true; this.gertrude.home = this.gertrude.pos.clone();
     this.nimbus = mk({ id: 'nimbus', name: 'Mr. Nimbus', pos: new THREE.Vector3(8, 10, -4), size: 1.2, seed: 29 }); this.nimbus.face.set('neutral'); this.nimbus.drift.set(0.12, 0, -0.06);

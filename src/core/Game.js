@@ -20,7 +20,8 @@ export class Game {
   constructor(canvas) {
     this.canvas = canvas; this.state = 'loading'; this.t = 0; this.cinematic = false; this.shotT = 0; this.restore = 0; this.restoreT = 0; this.fenHappy = false;
     const mobile = isTouch() || Math.min(innerWidth, innerHeight) < 520; this.quality = { mobile, dpr: Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2), shadow: mobile ? 1024 : 2048 }; this.dpr = this.quality.dpr;
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance' });
+    const qs = new URLSearchParams(location.search); this.noRender = qs.has('norender');
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance', preserveDrawingBuffer: this.noRender });
     r.setPixelRatio(this.dpr); r.setSize(innerWidth, innerHeight, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0; r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.3, 2500); this.camera.position.set(0, 6, 22);
     this.sunDir = new THREE.Vector3(0.38, 0.5, -0.62).normalize();
@@ -130,12 +131,14 @@ export class Game {
     trig('sun', m.sun > 0.4, S.FEN_SUN, 'startle'); trig('wind', m.wind > 0.5, S.FEN_WIND, 'startle'); trig('frost', m.frost > 0.4, S.FEN_FROST, 'shake');
     const p = this.player, w = p.weatherW; if (this.narr.cd('junoWind', 25) && w.wind.length() > 8 && this.state === 'play' && false) this.say.juno('Whoa!');
   }
+  /** QA helper: force one render (used with ?norender=1 for real-time headless tests) */
+  renderOnce() { this.renderer.render(this.scene, this.camera); }
   /** QA helper: advance the simulation without rendering */
   sim(sec, dt = 1 / 30) { for (let t = 0; t < sec; t += dt) { this.update(dt); this.input.endFrame(); } }
   frame(dtReal) {
     const dt = Math.min(dtReal, 0.05);
     this.update(dt);
-    this.renderer.render(this.scene, this.camera);
+    if (!this.noRender) this.renderer.render(this.scene, this.camera);
     this.input.endFrame();
     // adaptive resolution
     this._acc = (this._acc || 0) + dtReal; this._n = (this._n || 0) + 1;

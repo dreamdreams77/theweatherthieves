@@ -12,7 +12,7 @@ export class WeatherSystem {
     this.gust = { active: false, origin: new THREE.Vector3(), dir: new THREE.Vector3(0, 0, -1), range: 15, tan: 0.55, strength: 16, power: 0 };
     this.frost = { active: false, origin: new THREE.Vector3(), dir: new THREE.Vector3(0, 0, -1), range: 10, tan: 0.4, power: 0 };
     this.breeze = new THREE.Vector3(0.35, 0, 0.12); this.time = 0; this.rainRect = [];
-    const rings = new THREE.RingGeometry(0.55, 1, 16).rotateX(-Math.PI / 2);
+    const rings = new THREE.RingGeometry(0.82, 1, 24).rotateX(-Math.PI / 2);
     this.splash = new ParticlePool(scene, rings, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), 120, { fade: 'color' });
     this.streaks = new ParticlePool(scene, new THREE.SphereGeometry(0.1, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }), q(quality, 70, 130), { align: true, fade: 'color' });
     this.frostFx = new ParticlePool(scene, new THREE.IcosahedronGeometry(0.12, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }), q(quality, 80, 160), { fade: 'color' });
@@ -73,7 +73,7 @@ export class WeatherSystem {
     for (const p of this.motes.P) if (p.life > 0) { const fr = this.force(p.pos, 0); p.vel.x += fr.x * dt * 0.3; p.vel.z += fr.z * dt * 0.3; }
     this.splash.update(dt); this.streaks.update(dt); this.frostFx.update(dt); this.sparks.update(dt); this.smoke.update(dt); this.leaves.update(dt); this.motes.update(dt);
   }
-  spawnSplash = (x, y, z) => { _v.set(x, y + 0.04, z); this.splash.spawn(_v, _w.set(0, 0, 0), { life: 0.55, size: 0.08, grow: 0.5, color: 0xbfe6ff }); };
+  spawnSplash = (x, y, z) => { _v.set(x, y + 0.04, z); this.splash.spawn(_v, _w.set(0, 0, 0), { life: 0.42, size: 0.05, grow: 0.3, color: 0x6a8ca0 }); };
   burst(pos, color = 0xfff0b0, n = 16, speed = 3, size = 1) { for (let i = 0; i < n; i++) { _w.set(Math.random() - 0.5, Math.random() * 0.8 + 0.1, Math.random() - 0.5).normalize().multiplyScalar(speed * (0.4 + Math.random())); this.sparks.spawn(pos, _w, { life: 0.8 + Math.random() * 0.6, size: size * (0.6 + Math.random()), color, g: 2.2, drag: 0.8 }); } }
 }
 function q(quality, a, b) { return quality.mobile ? a : b; }

@@ -15,8 +15,8 @@ export class BloomPlant {
     this.water = 0; this.bloom = 0; this.group.position.copy(pos); this.wilt = 1; this.bloomed = false; this.sway = Math.random() * 6; this.drinking = 0;
   }
   weather(dt, w) {
-    if (w.rain > 0.45 && !this.bloomed) { this.water = Math.min(1, this.water + dt * 0.3 * w.rain * 1.4); this.drinking = 1; } else this.drinking = Math.max(0, this.drinking - dt * 2);
-    if (!this.bloomed && w.rain < 0.45) this.water = Math.max(0, this.water - dt * 0.012);
+    if (w.rain > 0.3 && !this.bloomed) { this.water = Math.min(1, this.water + dt * 0.3 * w.rain * 1.4); this.drinking = 1; } else this.drinking = Math.max(0, this.drinking - dt * 2);
+    if (!this.bloomed && w.rain < 0.3) this.water = Math.max(0, this.water - dt * 0.012);
     if (this.water >= 1 && !this.bloomed) { this.bloomed = true; this.onBloom?.(this); }
     if (w.sun > 0.2 && this.bloomed) this.bloom = Math.min(1, this.bloom + dt * 0.1);
     if (w.frost > 0.4) this.water = Math.max(0, this.water - dt * 0.2);
@@ -181,7 +181,7 @@ export class Windmill {
       for (let j = 0; j < 4; j++) { const rr = 1.3 + j * 1.35; sp.add(new THREE.BoxGeometry(1.4, 0.07, 0.07), 0x8a6a52, { p: [Math.cos(a) * rr + Math.cos(a + Math.PI / 2) * 0.72, Math.sin(a) * rr + Math.sin(a + Math.PI / 2) * 0.72, 0], r: [0, 0, a] }); }
       sp.add(new THREE.BoxGeometry(5.0, 1.55, 0.04), [0xf4ead2, 0xe86a5a, 0x4aa8a0, 0xe8b23a][k], { p: [Math.cos(a) * 3.8 + Math.cos(a + Math.PI / 2) * 0.78, Math.sin(a) * 3.8 + Math.sin(a + Math.PI / 2) * 0.78, 0.02], r: [0, 0, a], jitter: 0.1 }); }
     this.hub.add(mesh(sp.merge(), vcMat({ roughness: 0.9, side: THREE.DoubleSide })));
-    this.colliders = [terrain.addCollider({ x: pos.x, z: pos.z, r: 2.2 })];
+    this.colliders = [terrain.addCollider({ x: pos.x, z: pos.z, r: 2.2, y0: pos.y - 1, y1: pos.y + 10, cam: { r: 2.3, y0: pos.y - 1, y1: pos.y + 10 } })];
     // brake lever
     this.lever = new THREE.Group(); this.lever.position.set(2.9, 0, 3.6).applyAxisAngle(new THREE.Vector3(0, 1, 0), 0); this.group.add(this.lever);
     this.lever.add(mesh(new THREE.BoxGeometry(0.7, 0.4, 0.7), std({ color: 0x7a7480 }))); const arm = mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.3, 8), std({ color: 0xd9b25a, metalness: 0.7, roughness: 0.3 })); arm.position.y = 0.7; this.armPivot = new THREE.Group(); this.armPivot.position.y = 0.3; this.armPivot.add(arm); this.lever.add(this.armPivot);
