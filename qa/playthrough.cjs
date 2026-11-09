@@ -53,7 +53,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await until(() => __game.narr.flags.visitedB, 3000); await flush(); check('arrived Mirror Meadow', (await S()).f.visitedB);
   await shot(page, OUT + 'play-03-meadow.png');
   // ---- 4. puzzle 2: move Gertrude, aim mirror, melt ice
-  await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(300);
+  await flush(); await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); for (let i = 0; i < 5 && (await S()).held !== 'gertrude'; i++) { await flush(); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(350); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); }
   check('Gertrude grabbed', (await S()).held === 'gertrude'); await flush();
   const away = await ground(-36, -10); c = await faceCamera(away); await page.mouse.move(c.x, c.y, { steps: 6 }); await sleep(3500);
   c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400);
