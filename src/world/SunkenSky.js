@@ -233,7 +233,7 @@ export class SunkenSky {
     const { scene, weather, q } = this; const mk = (o) => weather.addCloud(new Cloud({ ...o, scene, quality: q }));
     this.fenCloud = mk({ id: 'fen', name: 'Drizzle', pos: new THREE.Vector3(0, 4, 8), size: 1.0, seed: 3, personal: true });
     this.fenCloud.face.set('sad'); this.fenCloud.drift.set(0, 0, 0);
-    this.gertrude = mk({ id: 'gertrude', name: 'Gertrude', pos: new THREE.Vector3(-31, 12.6, -23), size: 1.5, seed: 17 }); this.gertrude.face.set('smug'); this.gertrude.drift.set(0, 0, 0); this.gertrude.stubborn = true; this.gertrude.home = this.gertrude.pos.clone();
+    this.gertrude = mk({ id: 'gertrude', name: 'Gertrude', pos: new THREE.Vector3(-31, 11.2, -23), size: 1.5, seed: 17 }); this.gertrude.face.set('smug'); this.gertrude.drift.set(0, 0, 0); this.gertrude.stubborn = true; this.gertrude.home = this.gertrude.pos.clone();
     this.nimbus = mk({ id: 'nimbus', name: 'Mr. Nimbus', pos: new THREE.Vector3(8, 10, -4), size: 1.2, seed: 29 }); this.nimbus.face.set('neutral'); this.nimbus.drift.set(0.12, 0, -0.06);
     this.cirra = mk({ id: 'cirra', name: 'Cirra', pos: new THREE.Vector3(-17, 21, -52), size: 1.1, seed: 41 }); this.cirra.face.set('happy'); this.cirra.drift.set(-0.1, 0, 0.1);
     this.cumulo = mk({ id: 'cumulo', name: 'Cumulo', pos: new THREE.Vector3(24, 30, -60), size: 1.6, seed: 53 }); this.cumulo.face.set('sleepy'); this.cumulo.drift.set(0.05, 0, 0.02);

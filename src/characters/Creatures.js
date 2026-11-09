@@ -64,7 +64,7 @@ export class Puffkin {
       if (this.frost > 0.4) this.face.set('cringe'); else if (this.sleep > 0.5) this.face.set('sleepy'); else if (this.rain > 0.15) this.face.set('love'); else if (this.sun > 0.15) this.face.set('smug'); else if (dp < 4) this.face.set('happy'); else this.face.set('neutral');
     }
     this.face.talk = this.squeak > 0 ? 1 : 0; this.face.lookAt(new THREE.Vector3(clamp(dxp * 0.2, -1, 1), 0.1, 1).normalize());
-    this.face.update(dt, t);
+    if (this.fg.visible) this.face.update(dt, t);
     for (const [i, f] of this.feet.entries()) f.position.y = 0.08 + Math.max(0, Math.sin(t * 8 + this.seed + i * 3.14)) * 0.08 * clamp(sp, 0, 1);
   }
 }

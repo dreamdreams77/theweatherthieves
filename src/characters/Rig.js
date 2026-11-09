@@ -7,7 +7,7 @@ outlineMat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace
 outlineMat.customProgramCacheKey = () => 'outline';
 /** Add a mesh with an inverted-hull outline (film-style ink line). */
 export function inked(parent, geo, mat, { p = [0, 0, 0], s = [1, 1, 1], r = [0, 0, 0], outline = true, name } = {}) {
-  const m = new THREE.Mesh(geo, mat); m.position.set(...p); m.scale.set(...s); m.rotation.set(...r); m.castShadow = true; if (name) m.name = name;
+  const m = new THREE.Mesh(geo, mat); m.position.set(...p); m.scale.set(...s); m.rotation.set(...r); m.castShadow = !!outline; if (name) m.name = name;
   if (outline) { const o = new THREE.Mesh(geo, outlineMat); o.renderOrder = -1; m.add(o); }
   parent.add(m); return m;
 }

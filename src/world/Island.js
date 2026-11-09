@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { fbm, vnoise, smoothstep, TAU, rng, lerp } from '../core/Utils.js';
 import { std } from '../gfx/Mat.js';
 import { Tex } from '../gfx/Textures.js';
+import { Parts, tube } from './Build.js';
 
 /** A floating island: analytic height function (used for walking) + matching top and underside meshes. */
 export class Island {
@@ -70,19 +71,18 @@ export class Island {
     const under = new THREE.Mesh(ug, std({ vertexColors: true, map: Tex.rock(), bumpMap: Tex.bump(), bumpScale: 2, roughness: 0.92, flatShading: true }));
     under.castShadow = true; under.receiveShadow = true; g.add(under);
     // hanging crystals + roots under the island
-    const crystalM = std({ color: 0x9fe8ff, emissive: 0x3aa0c8, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1 });
-    const nc = q.mobile ? 5 : 9;
+    const cp = new Parts(), rp = new Parts(); const nc = q.mobile ? 5 : 9;
     for (let i = 0; i < nc; i++) {
       const th = r0() * TAU, k = 0.15 + r0() * 0.4, R = this.edgeR(th) * (1 - k) * 0.9;
-      const cr = new THREE.Mesh(new THREE.ConeGeometry(0.18 + r0() * 0.25, 1.2 + r0() * 1.8, 5), crystalM);
-      cr.position.set(Math.cos(th) * R, -1.5 - this.depth * k * 0.8, Math.sin(th) * R); cr.rotation.set(Math.PI + (r0() - 0.5) * 0.7, r0() * 6, (r0() - 0.5) * 0.7); g.add(cr);
+      cp.add(new THREE.ConeGeometry(0.18 + r0() * 0.25, 1.2 + r0() * 1.8, 5), 0x9fe8ff, { p: [Math.cos(th) * R, -1.5 - this.depth * k * 0.8, Math.sin(th) * R], r: [Math.PI + (r0() - 0.5) * 0.7, r0() * 6, (r0() - 0.5) * 0.7] });
     }
-    const rootM = std({ color: 0x5a4636, roughness: 1 });
     for (let i = 0; i < (q.mobile ? 6 : 12); i++) {
-      const th = r0() * TAU, R = this.edgeR(th) * (0.55 + r0() * 0.4), len = 2 + r0() * 5;
-      const pts = []; for (let s = 0; s < 6; s++) pts.push(new THREE.Vector3(Math.cos(th) * R + Math.sin(s * 0.9 + i) * 0.35, -1 - s * len / 5, Math.sin(th) * R + Math.cos(s * 0.7 + i) * 0.3));
-      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.1, 5), rootM); m.castShadow = true; g.add(m);
+      const th = r0() * TAU, R = this.edgeR(th) * (0.55 + r0() * 0.4), len = 2 + r0() * 5; const pts = [];
+      for (let s = 0; s < 6; s++) pts.push([Math.cos(th) * R + Math.sin(s * 0.9 + i) * 0.35, -1 - s * len / 5, Math.sin(th) * R + Math.cos(s * 0.7 + i) * 0.3]);
+      rp.add(tube(pts, 0.1, 10, 5), 0x5a4636, { jitter: 0.2 });
     }
+    const cm = new THREE.Mesh(cp.merge(), std({ vertexColors: true, emissive: 0x3aa0c8, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1 })); g.add(cm);
+    const rm = new THREE.Mesh(rp.merge(), std({ vertexColors: true, roughness: 1 })); rm.castShadow = true; g.add(rm);
     g.position.set(this.x, this.y, this.z); this.group = g; return g;
   }
 }

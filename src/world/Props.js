@@ -66,7 +66,7 @@ export function windChimes() {
   const g = new THREE.Group(), r = rng(5), p = new Parts(); p.add(new THREE.TorusGeometry(0.28, 0.03, 6, 14), 0xd9b25a, { p: [0, 0, 0], r: [Math.PI / 2, 0, 0] });
   g.add(mesh(p.merge(), vcMat({ metalness: 0.7, roughness: 0.3 }))); g.userData.tubes = [];
   for (let i = 0; i < 5; i++) { const a = (i / 5) * TAU, piv = new THREE.Group(); piv.position.set(Math.cos(a) * 0.24, 0, Math.sin(a) * 0.24); const L = 0.5 + r() * 0.5;
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, L, 8), std({ color: 0xcfd8e0, metalness: 0.85, roughness: 0.25 })); t.position.y = -L / 2 - 0.1; t.castShadow = true; piv.add(t); g.add(piv); g.userData.tubes.push(piv); }
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, L, 8), std({ color: 0xcfd8e0, metalness: 0.85, roughness: 0.25 })); t.position.y = -L / 2 - 0.1; t.castShadow = false; piv.add(t); g.add(piv); g.userData.tubes.push(piv); }
   return g;
 }
 /** Dangling laundry flags that flap with wind (vertex flap in shader) */
@@ -76,7 +76,7 @@ export function laundryLine(a, b, n = 6) {
   const cols = [0xe86a5a, 0xf4ead2, 0x4aa8a0, 0xe8b23a, 0xb08ad8, 0xf4ead2]; g.userData.cloths = [];
   for (let i = 0; i < n; i++) { const t = (i + 0.7) / (n + 0.4), pos = new THREE.Vector3().lerpVectors(a, b, t); pos.y -= Math.sin(t * Math.PI) * 0.35;
     const geo = new THREE.PlaneGeometry(0.5 + (i % 3) * 0.12, 0.6 + (i % 2) * 0.2, 6, 6); geo.translate(0, -0.3 - (i % 2) * 0.1, 0);
-    const m = std({ color: cols[i % cols.length], side: THREE.DoubleSide, roughness: 0.95, map: Tex.cloth() }, { sway: 0.8, amp: 1.2 }); const cl = new THREE.Mesh(geo, m); cl.position.copy(pos); cl.rotation.y = Math.atan2(dir.x, dir.z) + Math.PI / 2; cl.castShadow = true; g.add(cl); }
+    const m = std({ color: cols[i % cols.length], side: THREE.DoubleSide, roughness: 0.95, map: Tex.cloth() }, { sway: 0.8, amp: 1.2 }); const cl = new THREE.Mesh(geo, m); cl.position.copy(pos); cl.rotation.y = Math.atan2(dir.x, dir.z) + Math.PI / 2; cl.castShadow = false; g.add(cl); }
   return g;
 }
 /** ---- Upside-down waterfall: water rises from a pool into a cloud ---- */

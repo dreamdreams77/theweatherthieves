@@ -72,7 +72,7 @@ export class Cloud {
     const gray = this.raining * 0.15 + this.grab * 0.0; this.bodyMat.color.setScalar(1 - gray); this.bodyMat.emissiveIntensity = 0.22 - gray * 0.5 + this.grab * 0.12;
     this.updateRain(dt, terrain, wind, spawnSplash);
     // expression
-    this.face.update(dt, t); this.faceG.rotation.z = Math.sin(t * 1.2 + this.seed) * 0.03;
+    if (this.faceG.visible) this.face.update(dt, t); this.faceG.rotation.z = Math.sin(t * 1.2 + this.seed) * 0.03;
     this.face.lookAt(env.lookTarget || new THREE.Vector3(0, 0, 1));
   }
   updateRain(dt, terrain, wind, spawnSplash) {

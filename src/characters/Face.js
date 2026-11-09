@@ -36,16 +36,16 @@ export class Face {
       const ex = eyeX * r * s, ey = eyeY * r, ez = surf(ex, ey, -eR * 0.12);
       const eg = new THREE.Group(); eg.position.set(ex, ey, ez);
       eg.lookAt(ex * 1.2, ey * 0.7, ez + 2); // face outward along sphere normal-ish
-      const sc = new THREE.Mesh(new THREE.SphereGeometry(eR, 20, 14), scl); sc.scale.set(1, 1.08 * eyeSq, 0.62); eg.add(sc);
+      const sc = new THREE.Mesh(new THREE.SphereGeometry(eR, 14, 10), scl); sc.scale.set(1, 1.08 * eyeSq, 0.62); eg.add(sc);
       const ball = new THREE.Group(); eg.add(ball);
-      const ir = new THREE.Mesh(new THREE.SphereGeometry(eR * 0.66, 18, 12), iris); ir.scale.set(1, 1.05, 0.22); ir.position.z = eR * 0.5; ball.add(ir);
+      const ir = new THREE.Mesh(new THREE.SphereGeometry(eR * 0.66, 12, 8), iris); ir.scale.set(1, 1.05, 0.22); ir.position.z = eR * 0.5; ball.add(ir);
       const pu = new THREE.Mesh(new THREE.CircleGeometry(eR * 0.34, 16), dark); pu.position.z = eR * 0.5 + eR * 0.66 * 0.22 + 0.002; ball.add(pu);
       const hl = new THREE.Mesh(new THREE.CircleGeometry(eR * 0.14, 10), white); hl.position.set(eR * 0.2, eR * 0.24, pu.position.z + 0.002); ball.add(hl);
       const hl2 = new THREE.Mesh(new THREE.CircleGeometry(eR * 0.07, 8), white); hl2.position.set(-eR * 0.18, -eR * 0.2, pu.position.z + 0.002); ball.add(hl2);
       const lidP = new THREE.Group(); eg.add(lidP);
-      const lid = new THREE.Mesh(new THREE.SphereGeometry(lidR, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), skinM); lid.scale.set(1, 1, 0.78); lid.castShadow = false; lidP.add(lid);
+      const lid = new THREE.Mesh(new THREE.SphereGeometry(lidR, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), skinM); lid.scale.set(1, 1, 0.78); lid.castShadow = false; lidP.add(lid);
       const lowP = new THREE.Group(); eg.add(lowP);
-      const low = new THREE.Mesh(new THREE.SphereGeometry(lidR, 20, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skinM); low.scale.set(1, 1, 0.78); lowP.add(low);
+      const low = new THREE.Mesh(new THREE.SphereGeometry(lidR, 14, 7, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skinM); low.scale.set(1, 1, 0.78); lowP.add(low);
       this.group.add(eg);
       // brow
       const br = new THREE.Mesh(new THREE.CapsuleGeometry(0.05 * r, 0.42 * r * browW, 4, 8), browM); br.rotation.z = Math.PI / 2;

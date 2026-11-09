@@ -118,10 +118,20 @@ export class Game {
     this.sun.target.position.set(sx, sy, sz); this.sun.position.set(sx + sd.x * 80, sy + sd.y * 80, sz + sd.z * 80); this.sun.target.updateMatrixWorld();
     // ui + audio
     const cp = this.camera.position; for (const c of this.weather.clouds) c.group.visible = c.group.position.distanceToSquared(cp) < 110 * 110; for (const pk of this.world.puffkins) pk.group.visible = pk.pos.distanceToSquared(cp) < 70 * 70;
+    this.cull(cp);
     this.ui.updateBarks(dt, this.camera); this.ui.updateDialogue(dt);
     const gp = this.weather.gust.power; let rain = 0; for (const c of this.weather.clouds) rain = Math.max(rain, c.raining * (c.personal ? 0.3 : 1));
     this.audio.update(dt, { restore: this.restore, wind: Math.max(gp, 0.1), rain });
     if (this.state === 'play' && this.input.touchMode) { /* mobile reticle */ }
+  }
+  /** distance culling for things frustum culling cannot help with (instanced grass, small faces, the far whale) */
+  cull(cp) {
+    this._cf = (this._cf || 0) + 1; if (this._cf % 6) return;
+    if (!this._grass) { this._grass = []; this.scene.traverse((o) => { if (o.userData?.island && o.isGroup) this._grass.push(o); }); }
+    for (const g of this._grass) { const i = g.userData.island; g.visible = Math.hypot(cp.x - i.x, cp.z - i.z) < i.r + 70; }
+    for (const c of this.weather.clouds) c.faceG.visible = c.group.position.distanceToSquared(cp) < 32 * 32;
+    for (const pk of this.world.puffkins) pk.fg.visible = pk.pos.distanceToSquared(cp) < 28 * 28;
+    const wh = this.world.whale; if (wh) wh.group.visible = wh.group.position.distanceToSquared(cp) < 300 * 300;
   }
   cloudEnv() { return { terrain: this.terrain, wind: this.weather, spawnSplash: this.weather.spawnSplash, refill: (p) => this.world.refillAt(p), camDir: { x: this.camera.position.x - this.player.pos.x, z: this.camera.position.z - this.player.pos.z }, lookTarget: this.player.pos.clone().sub(this.camera.position).multiplyScalar(0).add(new THREE.Vector3((this.player.pos.x - 0) * 0, 0, 1)) }; }
   reactToWeather(dt) {

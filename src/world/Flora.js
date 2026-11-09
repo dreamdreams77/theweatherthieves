@@ -5,7 +5,7 @@ import { rng, TAU, lerp } from '../core/Utils.js';
 
 function bladeGeo() {
   const pos = [], idx = [];
-  for (let b = 0; b < 3; b++) { const a = (b / 3) * Math.PI, c = Math.cos(a) * 0.09, s = Math.sin(a) * 0.09, lean = 0.05 + b * 0.02; const o = pos.length / 3;
+  for (let b = 0; b < 2; b++) { const a = (b / 2) * Math.PI, c = Math.cos(a) * 0.09, s = Math.sin(a) * 0.09, lean = 0.05 + b * 0.02; const o = pos.length / 3;
     pos.push(-c, 0, -s, c, 0, s, -c * 0.45 + lean, 0.5, -s * 0.45, c * 0.45 + lean, 0.5, s * 0.45, lean * 2, 1, 0); idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2, o + 2, o + 3, o + 4); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length / 3).fill(0).flatMap(() => [0, 1, 0]), 3)); return g;
 }
@@ -33,7 +33,7 @@ export function scatterGrass(island, q, avoid, opts = {}) {
     const s = 0.8 + r() * 0.9; m.compose(new THREE.Vector3(x, y - 0.02, z), qn.identity(), new THREE.Vector3(s, s, s)); stems.setMatrixAt(f, m); heads.setMatrixAt(f, m); heads.setColorAt(f, c.set(pal[(r() * pal.length) | 0])); f++;
   }
   stems.count = heads.count = f; stems.frustumCulled = heads.frustumCulled = false;
-  const g = new THREE.Group(); g.add(mesh_, stems, heads); return g;
+  const g = new THREE.Group(); g.add(mesh_, stems, heads); g.userData.island = island; return g;
 }
 
 // ---------- hero plants ----------
