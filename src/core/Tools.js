@@ -22,7 +22,7 @@ export class Tools {
     _ray.setFromCamera(ndc, camera); const ro = _ray.ray.origin, rd = _ray.ray.direction;
     let best = Infinity, hit = null, type = null;
     const test = (center, rad, obj, ty) => { if (type === 'cloud') return; _v.subVectors(center, ro); const t = _v.dot(rd); if (t < 0 || t > 90) return; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < rad && t < best) { best = t; hit = obj; type = ty; } };
-    let cBest = Infinity, cHit = null; for (const c of g.weather.clouds) { _v.subVectors(c.pos, ro); const t = _v.dot(rd); if (t < 0 || t > 90) continue; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < c.footprint * 0.85 + 0.4 && t < cBest) { cBest = t; cHit = c; } }
+    let cBest = Infinity, cHit = null, cScore = 9; // the cloud whose centre is closest to the pointer wins for (const c of g.weather.clouds) { _v.subVectors(c.pos, ro); const t = _v.dot(rd); if (t < 0 || t > 90) continue; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); const sc = dd / (c.footprint * 0.85 + 0.4); if (sc < 1 && sc < cScore) { cScore = sc; cBest = t; cHit = c; } }
     const m = g.world.mirror; test(_v.copy(m.pos).add(new THREE.Vector3(0, 2.4, 0)), 1.9, m, 'mirror');
     for (const p of g.world.puffkins) test(_o.copy(p.pos).add(new THREE.Vector3(0, 0.5, 0)), 0.8, p, 'puffkin');
     test(_o.copy(g.companion.pos).add(new THREE.Vector3(0, 1.1, 0)), 1.0, g.companion, 'fen');
