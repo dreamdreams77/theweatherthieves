@@ -1,7 +1,7 @@
 // Shared helpers for human-style Playwright tests (real keyboard / mouse / touch events; page state is only READ).
 const { chromium } = require('playwright');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function launch({ mobile = false, w = 1280, h = 720, url = 'http://localhost:5173/?norender=1' } = {}) {
+async function launch({ mobile = false, w = 1280, h = 720, url = 'http://localhost:4173/?norender=1' } = {}) {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
   const ctx = await browser.newContext(mobile ? { viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 } : { viewport: { width: w, height: h } });
   const page = await ctx.newPage(); const logs = [];

@@ -21,13 +21,14 @@ export class Tools {
     const g = this.game; const ndc = input.tap ? input.pointer : (input.touchMode || !input.hasPointer ? this.reticle : input.pointer);
     _ray.setFromCamera(ndc, camera); const ro = _ray.ray.origin, rd = _ray.ray.direction;
     let best = Infinity, hit = null, type = null;
-    const test = (center, rad, obj, ty) => { _v.subVectors(center, ro); const t = _v.dot(rd); if (t < 0 || t > 90) return; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < rad && t < best) { best = t; hit = obj; type = ty; } };
-    for (const c of g.weather.clouds) test(c.pos, c.footprint * 0.85, c, 'cloud');
+    const test = (center, rad, obj, ty) => { if (type === 'cloud') return; _v.subVectors(center, ro); const t = _v.dot(rd); if (t < 0 || t > 90) return; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < rad && t < best) { best = t; hit = obj; type = ty; } };
+    let cBest = Infinity, cHit = null; for (const c of g.weather.clouds) { _v.subVectors(c.pos, ro); const t = _v.dot(rd); if (t < 0 || t > 90) continue; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < c.footprint * 0.85 + 0.4 && t < cBest) { cBest = t; cHit = c; } }
     const m = g.world.mirror; test(_v.copy(m.pos).add(new THREE.Vector3(0, 2.4, 0)), 1.9, m, 'mirror');
     for (const p of g.world.puffkins) test(_o.copy(p.pos).add(new THREE.Vector3(0, 0.5, 0)), 0.8, p, 'puffkin');
     test(_o.copy(g.companion.pos).add(new THREE.Vector3(0, 1.1, 0)), 1.0, g.companion, 'fen');
     test(_o.copy(g.world.jarPos).add(new THREE.Vector3(0, 3.2, 0)), 2.4, g.world.jar, 'jar');
     for (const gl of g.world.glints) if (!gl.got) test(gl.pos, 0.9, gl, 'glint');
+    if (cHit) { best = cBest; hit = cHit; type = 'cloud'; } // clouds are easy to pick: they win over creatures/props in front of them
     // ground march
     let gp = null; for (let t = 1; t < 120; t += 0.6) { const x = ro.x + rd.x * t, y = ro.y + rd.y * t, z = ro.z + rd.z * t; const top = g.terrain.topAt(x, z); if (top > -Infinity && y <= top + 0.1) { gp = { x, y: top, z, t }; break; } }
     const aim = this.aim; aim.hit = hit; aim.hitType = type;
