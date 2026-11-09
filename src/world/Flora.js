@@ -19,7 +19,7 @@ export function scatterGrass(island, q, avoid, opts = {}) {
     const th = r() * TAU, rho = Math.sqrt(r()) * island.r, x = island.x + Math.cos(th) * rho, z = island.z + Math.sin(th) * rho;
     const y = island.heightAt(x, z); if (y === -Infinity || island.nearEdge(x, z) > 0.94) continue;
     let bad = false; for (const a of avoid) if ((x - a[0]) ** 2 + (z - a[1]) ** 2 < a[2] * a[2]) { bad = true; break; } if (bad) continue;
-    const s = 0.6 + r() * 0.9; e.set(0, r() * 6.28, 0); qn.setFromEuler(e); m.compose(new THREE.Vector3(x, y - 0.03, z), qn, new THREE.Vector3(s * 0.8, s * (0.35 + r() * 0.4), s * 0.8));
+    const s = 0.6 + r() * 0.9; e.set(0, r() * 6.28, 0); qn.setFromEuler(e); m.compose(new THREE.Vector3(x, y - 0.03, z), qn, new THREE.Vector3(s * 0.8, s * (0.2 + r() * 0.3), s * 0.8));
     mesh_.setMatrixAt(k, m); c.copy(g1).lerp(g2, r()).multiplyScalar(0.8 + 0.4 * r()); mesh_.setColorAt(k, c); k++;
   }
   mesh_.count = k; mesh_.instanceMatrix.needsUpdate = true; mesh_.receiveShadow = false; mesh_.frustumCulled = false;

@@ -86,7 +86,7 @@ export class Cloud {
     for (let i = 0; i < n; i++) {
       const d = D[i];
       if (d.a === 0 || d.y <= d.gy) {
-        if (d.a === 1 && d.y <= d.gy && Math.random() < 0.12 && spawnSplash) spawnSplash(d.x, d.gy, d.z);
+        if (d.a === 1 && d.y <= d.gy && Math.random() < 0.05 && spawnSplash) spawnSplash(d.x, d.gy, d.z);
         const ang = Math.random() * TAU, rr = Math.sqrt(Math.random()) * rad;
         d.x = this.pos.x + Math.cos(ang) * rr; d.z = this.pos.z + Math.sin(ang) * rr; d.y = bottom - Math.random() * 1.5; d.v = 14 + Math.random() * 5; d.a = 1;
         const top = terrain.topAt(d.x, d.z);

@@ -116,6 +116,7 @@ export class Game {
     const target = this.player.pos, sd = this.sunDir; const k = 2 * this.sun.shadow.camera.right / this.quality.shadow; const sx = Math.round(target.x / k) * k, sy = Math.round(target.y / k) * k, sz = Math.round(target.z / k) * k;
     this.sun.target.position.set(sx, sy, sz); this.sun.position.set(sx + sd.x * 80, sy + sd.y * 80, sz + sd.z * 80); this.sun.target.updateMatrixWorld();
     // ui + audio
+    const cp = this.camera.position; for (const c of this.weather.clouds) c.group.visible = c.group.position.distanceToSquared(cp) < 110 * 110; for (const pk of this.world.puffkins) pk.group.visible = pk.pos.distanceToSquared(cp) < 70 * 70;
     this.ui.updateBarks(dt, this.camera); this.ui.updateDialogue(dt);
     const gp = this.weather.gust.power; let rain = 0; for (const c of this.weather.clouds) rain = Math.max(rain, c.raining * (c.personal ? 0.3 : 1));
     this.audio.update(dt, { restore: this.restore, wind: Math.max(gp, 0.1), rain });

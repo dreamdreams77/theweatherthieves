@@ -41,7 +41,7 @@ export class SunkenSky {
     for (let k = 0, tries = 0; k < n && tries < 400; tries++) {
       const th = r() * TAU, rho = (0.25 + 0.7 * Math.sqrt(r())) * i.r, x = i.x + Math.cos(th) * rho, z = i.z + Math.sin(th) * rho, y = i.heightAt(x, z);
       if (y === -Infinity || i.nearEdge(x, z) > 0.88) continue; if (avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 1.2) ** 2)) continue;
-      const kind = kinds[(r() * kinds.length) | 0], o = kind(seed + k * 7, r); o.position.set(x, y - 0.05, z); o.rotation.y = r() * 6; const s = 0.8 + r() * 0.6; o.scale.setScalar(s); this.scene.add(o);
+      const kind = kinds[(r() * kinds.length) | 0], o = kind(seed + k * 7); o.position.set(x, y - 0.05, z); o.rotation.y = r() * 6; const s = 0.6 + r() * 0.35; o.scale.setScalar(s); this.scene.add(o);
       const tr = (o.userData.trunkR || 0.4) * s; this.terrain.addCollider({ x, z, r: tr, y0: y - 1, y1: y + 10, cam: { r: 2.7 * s, y0: y + 2.2, y1: y + 9 } }); avoid.push([x, z, tr + 0.8]); k++; out.push(o);
     } return out;
   }
