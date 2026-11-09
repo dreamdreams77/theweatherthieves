@@ -34,6 +34,7 @@ export class Tools {
     if (gp && gp.t < best) { aim.point.set(gp.x, gp.y, gp.z); aim.ground = true; aim.hit = type === 'cloud' ? aim.hit : null; if (!(hit && best < gp.t)) { aim.hit = null; aim.hitType = null; } }
     if (hit && best <= (gp ? gp.t : Infinity)) { aim.point.copy(ro).addScaledVector(rd, best); aim.ground = false; }
     else if (!gp) { aim.point.copy(ro).addScaledVector(rd, 28); aim.ground = false; }
+    if (hit && type !== 'cloud' && gp) { aim.point.set(gp.x, gp.y, gp.z); aim.ground = true; } // pointing through a creature/prop still aims at the ground behind it
     aim.dist = best;
     return aim;
   }
