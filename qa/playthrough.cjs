@@ -46,7 +46,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await shot(page, OUT + 'play-02-blooms.png');
   await until(() => __game.world.bridge1.surface.enabled, 15000); check('Skyroad bridge unfurled', await ev(() => __game.world.bridge1.surface.enabled)); await flush();
   // drop the cloud (click it with Cloud tool)
-  await press('Digit1'); c = await faceCamera((await ev(() => __game.tools.held.pos.toArray()))); await page.mouse.move(c.x, c.y); await sleep(120); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(300); check('cloud released', (await S()).held === null);
+  await press('Digit1'); for (let i = 0; i < 6 && (await S()).held; i++) { await flush(); await sleep(400); await flush(); const gx = await ground(...(await ev(() => { const p = __game.player.pos; return [p.x - 2, p.z - 2]; }))); c = await faceCamera(gx); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); } check('cloud released', (await S()).held === null);
   // ---- 3. cross to Meadow
   const br = await ev(() => { const b = __game.world.bridge1.surface; return [b.a.toArray(), b.b.toArray()]; });
   check('reached bridge', await walkTo(br[0][0], br[0][2], 1.2)); check('crossed bridge', await walkTo(br[1][0], br[1][2], 1.2)); await walkTo(-27, -14, 1.8);
