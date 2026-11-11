@@ -14,7 +14,7 @@ export class Cloud {
   constructor({ id, pos, size = 1.4, seed = 1, name = 'Cloud', personality = {}, quality, scene, personal = false }) {
     this.id = id; this.name = name; this.personal = personal; this.seed = seed; this.q = quality; this.scene = scene;
     this.group = new THREE.Group(); this.pos = pos.clone(); this.vel = new THREE.Vector3(); this.baseSize = size;
-    this.stretch = 1; this.stretchT = 1; this.moisture = 1; this.held = false; this.raining = 0; this.rainOn = false; this.dark = 0; this.grab = 0;
+    this.stretch = 1; this.stretchT = 1; this.charge = 0; this.moisture = 1; this.held = false; this.raining = 0; this.rainOn = false; this.dark = 0; this.grab = 0;
     this.drift = new THREE.Vector3((rng(seed)() - 0.5) * 0.4, 0, (rng(seed + 1)() - 0.5) * 0.4); this.anchor = null; this.homeTimer = 0; this.owner = null; this.lines = personality;
     this.target = null; this.cooldown = 0; this.thunder = 0;
     const p = new Parts(); const r = rng(seed);
@@ -42,6 +42,8 @@ export class Cloud {
   update(dt, t, env) {
     const { terrain, wind, spawnSplash, refill } = env;
     this.cooldown -= dt; if (this.snowT > 0) this.snowT -= dt;
+    // electric charge builds while the cloud is squashed (compressed) and decays when relaxed
+    if (!this.fixed) { if (this.stretchT < 0.8 && this.charge < 1) this.charge = Math.min(1, (this.charge || 0) + dt * 0.28); else if (this.stretchT >= 0.8 && this.charge > 0) this.charge = Math.max(0, this.charge - dt * 0.35); }
     this.stretch = damp(this.stretch, this.stretchT, 7, dt);
     this.grab = damp(this.grab, this.held ? 1 : 0, 8, dt);
     // motion
@@ -53,7 +55,7 @@ export class Cloud {
       if (this.owner && this.homeTimer > 1.5) { const a = this.owner.cloudAnchorWorld; const dx = a.x - this.pos.x, dy = a.y - this.pos.y, dz = a.z - this.pos.z; const k = 5; this.vel.x += (dx * k - this.vel.x * 2.8) * dt; this.vel.y += (dy * k - this.vel.y * 2.8) * dt; this.vel.z += (dz * k - this.vel.z * 2.8) * dt; }
       else { this.vel.x += (this.drift.x - this.vel.x) * dt * 0.8; this.vel.z += (this.drift.z - this.vel.z) * dt * 0.8; this.vel.y += (Math.sin(t * 0.4 + this.seed) * 0.15 - this.vel.y * 0.9) * dt; }
     }
-    { const f = wind.force(this.pos, 4), br = wind.breeze; this.vel.x += (f.x - br.x * 0.9) * dt * 2.6; this.vel.y += f.y * dt * 2.6; this.vel.z += (f.z - br.z * 0.9) * dt * 2.6; } // only real gusts shove clouds; the breeze is ambient
+    { const f = wind.force(this.pos, 4), br = wind.breeze, hv = this.snowT > 0 ? 0.12 : 1; /* snow-laden clouds are heavy */ this.vel.x += (f.x - br.x * 0.9) * dt * 2.6 * hv; this.vel.y += f.y * dt * 2.6 * hv; this.vel.z += (f.z - br.z * 0.9) * dt * 2.6 * hv; } // only real gusts shove clouds; the breeze is ambient
     this.vel.multiplyScalar(1 - Math.min(1, dt * 0.3));
     if (!this.fixed) this.pos.addScaledVector(this.vel, dt);
     if (!this.held) { const lim = 150; if (Math.hypot(this.pos.x, this.pos.z) > lim) { this.vel.x -= this.pos.x * dt * 0.05; this.vel.z -= this.pos.z * dt * 0.05; } }
@@ -67,13 +69,14 @@ export class Cloud {
     const want = this.rainOn && this.moisture > 0.01 ? (this.rainTarget ?? 1) : 0;
     this.raining = damp(this.raining, want, 5, dt);
     this.density = 1 / (s * s); // compress = heavier downpour
-    if (this.raining > 0.02) this.moisture = Math.max(0, this.moisture - dt * 0.07 * this.density * (this.personal ? 0.25 : 1));
+    if (this.raining > 0.02) this.moisture = Math.max(0, this.moisture - dt * 0.07 * this.density * (this.personal ? 0.25 : 1) * (this.precip === 'snow' ? 0.5 : 1));
     else this.moisture = Math.min(1, this.moisture + dt * (0.03 + (refill ? refill(this.pos) : 0)));
     this.dark = damp(this.dark, 1 - this.moisture * 0.0 - (this.moisture > 0.3 ? 0.5 : 0), 2, dt) * 0 + (1 - this.moisture) * 0; // reserved
     // colour: heavier = greyer, stormy when held & raining
-    const gray = this.raining * 0.15 + this.grab * 0.0; this.bodyMat.color.setScalar(1 - gray); this.bodyMat.emissiveIntensity = 0.22 - gray * 0.5 + this.grab * 0.12;
+    const gray = this.raining * 0.15 + (this.charge || 0) * 0.55; this.bodyMat.color.setScalar(1 - gray); this.bodyMat.emissiveIntensity = 0.22 - gray * 0.5 + this.grab * 0.12;
     if (this.rainMesh.userData.mode !== this.precip) { this.rainMesh.userData.mode = this.precip; this.rainMesh.geometry = this.precip === 'snow' ? flakeGeo : dropGeo; this.rainMesh.material = this.precip === 'snow' ? snowMat : dropMat; }
     this.updateRain(dt, terrain, wind, spawnSplash);
+    if ((this.charge || 0) > 0.5 && Math.random() < dt * 14 * this.charge) env.sparks?.(this.pos, this.charge);
     // expression
     if (this.faceG.visible) this.face.update(dt, t); this.faceG.rotation.z = Math.sin(t * 1.2 + this.seed) * 0.03;
     this.face.lookAt(env.lookTarget || new THREE.Vector3(0, 0, 1));

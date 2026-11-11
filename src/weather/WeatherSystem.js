@@ -74,7 +74,14 @@ export class WeatherSystem {
     if (this.ambient === 'snow') { this.flakeT -= dt; while (this.flakeT <= 0) { this.flakeT += 0.025; _v.set(this.focus.x + (Math.random() - 0.5) * 40, this.focus.y + 8 + Math.random() * 6, this.focus.z + (Math.random() - 0.5) * 40); this.flakes.spawn(_v, _w.set((Math.random() - 0.3) * 0.6, -1.4 - Math.random(), (Math.random() - 0.5) * 0.5), { life: 9, size: 1, color: 0xffffff, drag: 0.2 }); } for (const p of this.flakes.P) if (p.life > 0) { const fr = this.force(p.pos, 0); p.vel.x += (fr.x - this.breeze.x * 0.3) * dt * 0.6; p.vel.z += (fr.z - this.breeze.z * 0.3) * dt * 0.6; const tp = this.terrain.topAt(p.pos.x, p.pos.z); if (tp > -Infinity && p.pos.y < tp + 0.05) p.life = 0; } }
     this.moteT -= dt; if (this.moteT <= 0) { this.moteT = 0.08; _v.set(this.focus.x + (Math.random() - 0.5) * 36, this.focus.y + (Math.random() - 0.4) * 12, this.focus.z + (Math.random() - 0.5) * 36); this.motes.spawn(_v, _w.set((Math.random() - 0.5) * 0.3, 0.2 + Math.random() * 0.3, (Math.random() - 0.5) * 0.3), { life: 6, size: 1, color: 0xfff4d0 }); }
     for (const p of this.motes.P) if (p.life > 0) { const fr = this.force(p.pos, 0); p.vel.x += fr.x * dt * 0.3; p.vel.z += fr.z * dt * 0.3; }
+    if (this.bolts) for (let i = this.bolts.length - 1; i >= 0; i--) { const b = this.bolts[i]; b.t -= dt; b.m.material.opacity = Math.max(0, b.t / 0.35); if (b.t <= 0) { this.scene.remove(b.m); b.m.geometry.dispose(); b.m.material.dispose(); this.bolts.splice(i, 1); } }
+    this.flash = Math.max(0, (this.flash || 0) - dt * 4);
     this.splash.update(dt); this.streaks.update(dt); this.frostFx.update(dt); this.sparks.update(dt); this.smoke.update(dt); this.flakes.update(dt); this.leaves.update(dt); this.motes.update(dt);
+  }
+  /** jagged lightning bolt from a to b that fades quickly */
+  bolt(a, b, color = 0xfff6b0) {
+    const pts = [], n = 9; for (let i = 0; i <= n; i++) { const t = i / n, j = i === 0 || i === n ? 0 : 1.1; pts.push(new THREE.Vector3(a.x + (b.x - a.x) * t + (Math.random() - 0.5) * j, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t + (Math.random() - 0.5) * j)); }
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.09, 5), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); m.frustumCulled = false; this.scene.add(m); (this.bolts ??= []).push({ m, t: 0.35 }); this.flash = 1;
   }
   spawnSplash = (x, y, z) => { _v.set(x, y + 0.04, z); this.splash.spawn(_v, _w.set(0, 0, 0), { life: 0.42, size: 0.05, grow: 0.3, color: 0x6a8ca0 }); };
   burst(pos, color = 0xfff0b0, n = 16, speed = 3, size = 1) { for (let i = 0; i < n; i++) { _w.set(Math.random() - 0.5, Math.random() * 0.8 + 0.1, Math.random() - 0.5).normalize().multiplyScalar(speed * (0.4 + Math.random())); this.sparks.spawn(pos, _w, { life: 0.8 + Math.random() * 0.6, size: size * (0.6 + Math.random()), color, g: 2.2, drag: 0.8 }); } }

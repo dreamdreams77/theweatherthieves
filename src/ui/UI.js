@@ -108,5 +108,5 @@ export class UI {
     this.q('#memBtn').textContent = 'Memories ' + have.length + '/' + ids.length;
   }
   showEnd(stats, chapterDone) {
-    const nxt = CHAPTERS[(this.game.chapterNo || 1) + 1]; const b = this.q('#endNext'); b.style.display = nxt ? '' : 'none'; if (nxt) b.textContent = 'Next: ' + nxt.title; if (chapterDone) { this.q('#end .eyebrow').textContent = 'Chapter ' + this.game.chapterNo + ' complete'; this.q('#end h1').textContent = (chapterDone === 1 ? this.game.chapterTitle() : this.game.chapterTitle()) + ' is saved'; } this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }
+    const nxt = CHAPTERS[(this.game.chapterNo || 1) + 1]; const b = this.q('#endNext'); b.style.display = nxt ? '' : 'none'; if (nxt) b.textContent = 'Next: ' + nxt.title; if (chapterDone) { this.q('#end .eyebrow').textContent = 'Chapter ' + this.game.chapterNo + ' complete'; this.q('#end h1').textContent = this.game.chapterTitle() + ' is saved'; if (chapterDone === 4) { this.q('#end .eyebrow').textContent = 'The End'; this.q('#end h1').textContent = 'The weather is home'; this.q('#end p').innerHTML = 'Sunshine, rain, snow and thunder are back — and so is the sky’s memory.<br>Juno, Fen and Wren will look after them together.'; } } this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }
 }

@@ -45,7 +45,7 @@ class Sled {
     const p = new Parts(); p.add(new THREE.BoxGeometry(2, 0.5, 1.4), 0x9a6a42, { p: [0, 0.55, 0], jitter: 0.12 }); for (const s of [-1, 1]) p.add(new THREE.BoxGeometry(2.4, 0.1, 0.12), 0x5a5a68, { p: [0, 0.18, s * 0.6] }); for (let i = 0; i < 4; i++) p.add(new THREE.BoxGeometry(0.55, 0.45, 0.5), [0xd8604a, 0x4aa8a0, 0xe8b23a, 0xb070d0][i], { p: [-0.7 + i * 0.5, 1.0, 0] });
     this.group.add(mesh(p.merge(), vcMat({ roughness: 0.85 }))); scene.add(this.group);
   }
-  weather(dt, w) { const f = w.wind.clone().sub(w.breeze); f.y = 0; const sp = f.length(); this.blizzard = damp(this.blizzard, w.snow > 0.2 && sp > 6 ? 1 : 0, 6, dt); if (!this.locked && this.blizzard > 0.5) this.vel.addScaledVector(f.normalize(), dt * 5.5 * this.blizzard); }
+  weather(dt, w) { const f = w.wind.clone().sub(w.breeze); f.y = 0; const sp = f.length(); this.blizzard = damp(this.blizzard, w.snow > 0.2 && sp > 6 ? 1 : 0, 6, dt); if (!this.locked && this.blizzard > 0.5) this.vel.addScaledVector(f.normalize(), dt * 8 * this.blizzard); }
   update(dt, plates) {
     this.vel.multiplyScalar(Math.exp(-1.8 * dt)); const nx = this.pos.x + this.vel.x * dt, nz = this.pos.z + this.vel.z * dt, g = this.terrain.groundAt(nx, nz, this.pos.y + 0.3, 0.4); if (g) { this.pos.x = nx; this.pos.z = nz; this.pos.y = g.y; } else this.vel.set(0, 0, 0); this.terrain.push(this.pos, this.radius, this.pos.y); this.group.position.copy(this.pos);
     this.group.rotation.y = damp(this.group.rotation.y, Math.atan2(this.vel.x, this.vel.z) || this.group.rotation.y, 4, dt) * (this.vel.length() > 0.2 ? 1 : 1);
@@ -129,6 +129,7 @@ export class ForestWorld extends ChapterBase {
     for (const u of this.updaters) u(dt, t); for (const f of this.risingFalls) f.update(dt);
     for (const s of this.segs) s.update(); for (const z of this.zones) { z.warm = this.springs.some((sp) => Math.hypot(z.x - sp.x, z.z - sp.z) < sp.r + z.r); z.update(); }
     for (const sp of this.springs) { if (Math.random() < dt * 14) this.weather.smoke.spawn(new THREE.Vector3(sp.x + (Math.random() - 0.5) * sp.r, sp.pos.y, sp.z + (Math.random() - 0.5) * sp.r), new THREE.Vector3(0, 1.2, 0), { life: 2.4, size: 0.8, grow: 2.2 }); }
+    { const s = this.sled, p = this.plate; const dx = p.pos.x - s.pos.x, dz = p.pos.z - s.pos.z, d = Math.hypot(dx, dz); if (d < 1.9 && d > 0.05 && s.vel.length() < 2.4 && !s.locked) { s.vel.x += (dx / d) * dt * 5; s.vel.z += (dz / d) * dt * 5; } } // gentle assist onto the plate
     this.sled.update(dt); this.sledReact.pos.copy(this.sled.pos).add(new THREE.Vector3(0, 0.6, 0)); this.plate.update(dt, [{ pos: this.sled.pos }]);
     for (const g of this.glints) if (!g.got) { g.group.rotation.y += dt * 1.2; g.group.position.y = g.pos.y + Math.sin(t * 2 + g.pos.x) * 0.1; }
     this.mirror.update(dt, t, this.sunDir, true); this.spirit.update(dt, t); if (this.jarOpen) { this.lid.position.y += (this.lid.userData.v || 0) * dt; this.lid.userData.v = (this.lid.userData.v || 0) - 12 * dt; this.lid.rotation.x += dt * 3; this.spirit.group.position.y = damp(this.spirit.group.position.y, 7, 1, dt); } else this.spirit.group.position.y = 2.2 + Math.sin(t * 1.4) * 0.12;

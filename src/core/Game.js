@@ -142,7 +142,7 @@ export class Game {
     if (this.state === 'dialogue' || this.cinematic) { input.orbit.set(0, 0); }
     this.rig.update(dt, this.player.pos, input, this.player.vel, this.terrain); this.camera.updateMatrixWorld();
     this.lookTarget = this.camera.position;
-    this.sky.update(t, this.camera.position);
+    this.sky.update(t, this.camera.position); if (this.weather.flash > 0) { this.hemi.intensity += this.weather.flash * 2.2; this.flashing = true; } else if (this.flashing) { this.flashing = false; this.applyMood(); }
     // shadows follow player (snap texels)
     const target = this.player.pos, sd = this.sunDir; const k = 2 * this.sun.shadow.camera.right / this.quality.shadow; const sx = Math.round(target.x / k) * k, sy = Math.round(target.y / k) * k, sz = Math.round(target.z / k) * k;
     this.sun.target.position.set(sx, sy, sz); this.sun.position.set(sx + sd.x * 80, sy + sd.y * 80, sz + sd.z * 80); this.sun.target.updateMatrixWorld();
@@ -163,7 +163,7 @@ export class Game {
     for (const pk of (this.world.puffkins || [])) pk.fg.visible = pk.pos.distanceToSquared(cp) < 28 * 28;
     const wh = this.world.whale; if (wh) wh.group.visible = wh.group.position.distanceToSquared(cp) < 300 * 300;
   }
-  cloudEnv() { return { terrain: this.terrain, wind: this.weather, spawnSplash: this.weather.spawnSplash, refill: (p) => this.world.refillAt(p), camDir: { x: this.camera.position.x - this.player.pos.x, z: this.camera.position.z - this.player.pos.z }, lookTarget: this.player.pos.clone().sub(this.camera.position).multiplyScalar(0).add(new THREE.Vector3((this.player.pos.x - 0) * 0, 0, 1)) }; }
+  cloudEnv() { return { sparks: (pos, k) => this.weather.burst(pos, 0xfff0a0, 1 + (k * 2 | 0), 2, 0.6), terrain: this.terrain, wind: this.weather, spawnSplash: this.weather.spawnSplash, refill: (p) => this.world.refillAt(p), camDir: { x: this.camera.position.x - this.player.pos.x, z: this.camera.position.z - this.player.pos.z }, lookTarget: this.player.pos.clone().sub(this.camera.position).multiplyScalar(0).add(new THREE.Vector3((this.player.pos.x - 0) * 0, 0, 1)) }; }
   reactToWeather(dt) {
     const c = this.companion, m = c.mood, t = this.t; this._fr ??= { rain: 0, sun: 0, wind: 0, frost: 0 };
     const trig = (k, cond, lines, anim, ex) => { if (cond && c.mood && this.narr.cd('fen' + k, 14) && this.state === 'play') { this.say.fen(lines[(Math.random() * lines.length) | 0]); if (anim) c.fen.play(anim); } };
