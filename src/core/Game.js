@@ -101,10 +101,10 @@ export class Game {
         else if (opts.shot !== false) { /* narrator keeps previous shot */ }
         this.lookTarget = e ? null : null;
       },
-      onEnd: () => { this.player.locked = this.cinematic ? true : false; this.rig.setShot(this.cinematic ? this.rig.shot : null); this.speaker = null; this.shotT = 0; this.player.talk = 0; this.companion.talk = 0; this.world.sunny.face.talk = 0; opts.onEnd?.(); },
+      onEnd: () => { this.player.locked = this.cinematic ? true : false; this.rig.setShot(this.cinematic ? this.rig.shot : null); this.speaker = null; this.shotT = 0; this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) this.world.sunny.face.talk = 0; opts.onEnd?.(); },
     });
   }
-  talkEnd() { const e = this.speaker; if (e) { e.face.talk = 0; if (e.c && e.c.talk !== undefined) e.c.talk = 0; } this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) this.world.sunny.face.talk = 0; }
+  talkEnd() { const e = this.speaker; if (e) { e.face.talk = 0; if (e.c && e.c.talk !== undefined) e.c.talk = 0; } this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) if (this.world.sunny) this.world.sunny.face.talk = 0; }
   talkNPC(npc) {
     if (this.state !== 'play') return; if (Math.hypot(npc.pos.x - this.player.pos.x, npc.pos.z - this.player.pos.z) > 9) { this.say.juno('Let me get closer first!'); return; }
     const lines = this.narr.npcLines?.(npc); if (!lines || !lines.length) return; npc.react = 6; this.dialogue(lines, { shot: true, onEnd: () => (npc.react = 0) });
