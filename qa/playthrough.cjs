@@ -79,11 +79,11 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   // ---- 6. puzzle 3: wind crates onto plates, freeze, blow sails
   for (let k = 0; k < 2; k++) {
     const gs = () => ev((k) => { const w = __game.world; return { c: w.crates[k].pos.toArray(), p: w.plates[k].pos.toArray(), on: w.plates[k].on }; }, k);
-    for (let i = 0; i < 40; i++) { let q = await gs(); const dx = q.p[0] - q.c[0], dz = q.p[2] - q.c[2], d = Math.hypot(dx, dz); if (d < 0.55) break;
+    for (let i = 0; i < 40; i++) { let q = await gs(); const dx = q.p[0] - q.c[0], dz = q.p[2] - q.c[2], d = Math.hypot(dx, dz); if (q.on) break;
       await press('Digit3'); const sx = q.c[0] - dx / d * 3, sz = q.c[2] - dz / d * 3; await walkTo(sx, sz, 0.8, 15000);
       const tgt = await ground(q.p[0], q.p[2]); const s = await faceCamera(tgt); await page.mouse.move(s.x, s.y); await page.mouse.down(); const t0 = Date.now(); while (Date.now() - t0 < 2500) { q = await gs(); if (Math.hypot(q.p[0] - q.c[0], q.p[2] - q.c[2]) < 3.4) break; const s2 = await proj(tgt); await page.mouse.move(s2.x, s2.y); await sleep(80); } await page.mouse.up(); await sleep(900); }
     if (process.env.DBG) console.log('crate', k, JSON.stringify(await gs()), JSON.stringify((await S()).p)); const q = await gs(); await press('Digit5'); const cs = await ground(q.c[0], q.c[2], 0.5); await walkTo(q.c[0] - 3, q.c[2], 1.0, 15000); await holdAt(cs, new Function(`return __game.world.crates[${k}].frozen>0.95`), 8000);
-    check(`crate ${k + 1} on plate and frozen`, (await gs()).on && (await ev((k) => __game.world.crates[k].frozen > 0.9, k)));
+    const fz = await ev((k) => +__game.world.crates[k].frozen.toFixed(2), k); check(`crate ${k + 1} on plate and frozen`, (await gs()).on && fz > 0.9, 'frozen=' + fz + ' ' + JSON.stringify(await gs()));
   }
   await sleep(600); await flush(); check('both plates active, brake released', await ev(() => __game.narr.flags.plates && !__game.world.windmill.braked));
   await shot(page, OUT + 'play-05-plates.png');
