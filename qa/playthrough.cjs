@@ -32,7 +32,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   const y0 = (await S()).yaw; await page.mouse.move(640, 360); await page.mouse.down({ button: 'right' }); await page.mouse.move(740, 340, { steps: 5 }); await page.mouse.up({ button: 'right' }); await sleep(200); check('right-drag orbits camera', Math.abs((await S()).yaw - y0) > 0.2);
   const y1 = (await ev(() => __game.player.pos.y)); await press('Space'); await sleep(250); const y2 = await ev(() => __game.player.pos.y); check('Space jumps', y2 > y1 + 0.3, 'dy=' + (y2 - y1).toFixed(2));
   await sleep(900);
-  if (process.env.START === 'meadow') { // DEBUG ONLY: skip to the Meadow by teleport (never used for the real verification run)
+  if (process.env.START === 'meadow' || process.env.START === 'rise') { // DEBUG ONLY: skip to the Meadow by teleport (never used for the real verification run)
     await ev(() => { const g = __game, w = g.world; w.blooms.forEach((b) => { b.water = 1; b.bloomed = true; g.narr.onBloom(b); }); g.player.pos.set(-27, w.B.heightAt(-27, -14), -14); g.player.safe.copy(g.player.pos); g.narr.flags.visitedB = true; g.companion.pos.set(-25, w.B.heightAt(-25, -13), -13); });
     await sleep(1500); await flush();
   } else {
@@ -57,6 +57,10 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await until(() => __game.narr.flags.visitedB, 3000); await flush(); check('arrived Mirror Meadow', (await S()).f.visitedB);
   await shot(page, OUT + 'play-03-meadow.png');
   }
+  if (process.env.START === 'rise') { // DEBUG ONLY teleport
+    await ev(() => { const g = __game, w = g.world; w.ice.melt = 1; w.ice.frozen = false; g.narr.onMelt(); g.narr.flags.visitedC = true; g.player.pos.set(-18, w.C.heightAt(-18, -50), -50); g.player.safe.copy(g.player.pos); g.companion.pos.set(-16, w.C.heightAt(-16, -49), -49); });
+    await sleep(1500); await flush();
+  } else {
   // ---- 4. puzzle 2: move Gertrude, aim mirror, melt ice
   await flush(); await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); for (let i = 0; i < 5 && (await S()).held !== 'gertrude'; i++) { await flush(); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(350); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); if (process.env.DBG) console.log('dbg', JSON.stringify(await ev(() => { const g = __game, a = g.tools.aim; return { type: a.hitType, hit: a.hit?.id || a.hit?.name, held: g.tools.held?.id, tool: g.tools.tool, state: g.state, locked: g.player.locked, dlg: g.ui.dlg.active, ptr: g.input.pointer.toArray(), clouds: g.weather.clouds.map((c) => c.id + ':' + c.pos.toArray().map((x) => x.toFixed(1)).join(',')) }; })), JSON.stringify(c)); }
   check('Gertrude grabbed', (await S()).held === 'gertrude'); await flush();
@@ -71,13 +75,14 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await walkTo(gate[0] - 0.466 * 5, gate[2] + 0.885 * 5, 1.5); await walkTo(gate[0] + 0.466 * 3, gate[2] - 0.885 * 3, 1.5);
   const b2 = await ev(() => { const b = __game.world.bridge2.surface; return [b.a.toArray(), b.b.toArray()]; }); await walkTo(b2[0][0], b2[0][2], 1.2); await walkTo(b2[1][0], b2[1][2], 1.2); await walkTo(-18, -50, 2);
   await until(() => __game.narr.flags.visitedC, 4000); await flush(); check('arrived Windmill Rise', (await S()).f.visitedC);
+  }
   // ---- 6. puzzle 3: wind crates onto plates, freeze, blow sails
   for (let k = 0; k < 2; k++) {
     const gs = () => ev((k) => { const w = __game.world; return { c: w.crates[k].pos.toArray(), p: w.plates[k].pos.toArray(), on: w.plates[k].on }; }, k);
     for (let i = 0; i < 40; i++) { let q = await gs(); const dx = q.p[0] - q.c[0], dz = q.p[2] - q.c[2], d = Math.hypot(dx, dz); if (d < 0.55) break;
       await press('Digit3'); const sx = q.c[0] - dx / d * 3, sz = q.c[2] - dz / d * 3; await walkTo(sx, sz, 0.8, 15000);
       const tgt = await ground(q.p[0], q.p[2]); const s = await faceCamera(tgt); await page.mouse.move(s.x, s.y); await page.mouse.down(); const t0 = Date.now(); while (Date.now() - t0 < 2500) { q = await gs(); if (Math.hypot(q.p[0] - q.c[0], q.p[2] - q.c[2]) < 3.4) break; const s2 = await proj(tgt); await page.mouse.move(s2.x, s2.y); await sleep(80); } await page.mouse.up(); await sleep(900); }
-    const q = await gs(); await press('Digit5'); const cs = await ground(q.c[0], q.c[2], 0.5); await walkTo(q.c[0] - 3, q.c[2], 1.0, 15000); await holdAt(cs, new Function(`return __game.world.crates[${k}].frozen>0.95`), 8000);
+    if (process.env.DBG) console.log('crate', k, JSON.stringify(await gs()), JSON.stringify((await S()).p)); const q = await gs(); await press('Digit5'); const cs = await ground(q.c[0], q.c[2], 0.5); await walkTo(q.c[0] - 3, q.c[2], 1.0, 15000); await holdAt(cs, new Function(`return __game.world.crates[${k}].frozen>0.95`), 8000);
     check(`crate ${k + 1} on plate and frozen`, (await gs()).on && (await ev((k) => __game.world.crates[k].frozen > 0.9, k)));
   }
   await sleep(600); await flush(); check('both plates active, brake released', await ev(() => __game.narr.flags.plates && !__game.world.windmill.braked));
