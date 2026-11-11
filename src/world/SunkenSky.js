@@ -148,7 +148,9 @@ export class SunkenSky {
     this.updaters.push((dt, t) => this.windmill.update(dt, t));
     this.plates = [new PressurePlate(new THREE.Vector3(-10, this.on(C, -10, -57.5), -57.5)), new PressurePlate(new THREE.Vector3(-6.2, this.on(C, -6.2, -53.8), -53.8))]; this.plates.forEach((p) => scene.add(p.group));
     this.crates = [[-17, -54], [-19.5, -55.5], [-18, -51.5]].map(([x, z], i) => { const c = new FeatherCrate(new THREE.Vector3(x, this.on(C, x, z), z), terrain, i, new THREE.Vector3(x, this.on(C, x, z), z)); scene.add(c.group); weather.register(c); return c; });
-    this.updaters.push((dt, t) => { this.crates.forEach((c) => c.update(dt, t, this.game.player, this.crates)); this.plates.forEach((p) => p.update(dt, this.crates)); });
+    this.updaters.push((dt, t) => { this.crates.forEach((c) => c.update(dt, t, this.game.player, this.crates)); this.plates.forEach((p) => p.update(dt, this.crates));
+      // gentle magnetic assist: a slow crate that comes to rest near a rune plate settles onto it
+      for (const c of this.crates) { if (c.frozen > 0.5) continue; for (const p of this.plates) { const dx = p.pos.x - c.pos.x, dz = p.pos.z - c.pos.z, d = Math.hypot(dx, dz); if (d < 1.7 && d > 0.05 && Math.hypot(c.vel.x, c.vel.z) < 2.2) { c.vel.x += (dx / d) * dt * 6; c.vel.z += (dz / d) * dt * 6; } } } });
     this.lift = new Lift(new THREE.Vector3(-4.5, this.on(C, -4.5, -60), -60), this.D.y + 0.35, terrain); scene.add(this.lift.group, this.lift.frame); terrain.addSurface(this.lift.surface);
     // lift colliders (frame posts) kept away from the platform footprint
     this.updaters.push((dt) => this.lift.update(dt, this.liftCharge ?? 0));
