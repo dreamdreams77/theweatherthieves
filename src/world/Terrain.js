@@ -27,7 +27,7 @@ export class Terrain {
 }
 /** Rope bridge walking surface (a thick segment with sag). */
 export class BridgeSurface {
-  constructor(a, b, width = 2.2, sag = 0.7) { this.a = a.clone(); this.b = b.clone(); this.w = width; this.sag = sag; this.enabled = true;
+  constructor(a, b, width = 2.2, sag = 0.7) { this.a = a.clone(); this.b = b.clone(); this.w = width; this.sag = sag; this.enabled = true; this.isBridge = true;
     this.d = new THREE.Vector2(b.x - a.x, b.z - a.z); this.len = this.d.length(); this.d.normalize(); }
   heightAt(x, z) {
     const px = x - this.a.x, pz = z - this.a.z, t = (px * this.d.x + pz * this.d.y) / this.len;

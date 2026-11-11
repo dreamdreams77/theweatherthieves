@@ -31,11 +31,15 @@ export class Player {
     this.vel.y -= 24 * dt; if (this.vel.y < -30) this.vel.y = -30;
     // wind pushes (in the gust yourself)
     const nx = this.pos.x + this.vel.x * dt, nz = this.pos.z + this.vel.z * dt, ny = this.pos.y + this.vel.y * dt;
-    const gr = terrain.groundAt(nx, nz, this.pos.y, 0.62);
-    if (gr && ny <= gr.y + 0.001 && this.vel.y <= 0) { this.pos.set(nx, damp(this.pos.y, gr.y, 30, dt) > gr.y ? gr.y : gr.y, nz); if (!this.grounded) { g.audio?.sfx('land'); } this.grounded = true; this.vel.y = 0; this.surf = gr.surf; this.ice = !!gr.surf.isIce; }
-    else if (gr && this.grounded && ny > gr.y && this.vel.y <= 0 && ny - gr.y < 0.2) { this.pos.set(nx, gr.y, nz); }
+    let gr = terrain.groundAt(nx, nz, this.pos.y, 0.62), nxx = nx, nzz = nz;
+    if (!gr && this.grounded && this.surf?.isBridge && this.vel.y <= 0) { // rope rails: slide along the bridge instead of stepping off the side
+      const gx = terrain.groundAt(nx, this.pos.z, this.pos.y, 0.62), gz = terrain.groundAt(this.pos.x, nz, this.pos.y, 0.62);
+      if (gx) { gr = gx; nzz = this.pos.z; this.vel.z = 0; } else if (gz) { gr = gz; nxx = this.pos.x; this.vel.x = 0; } else { gr = terrain.groundAt(this.pos.x, this.pos.z, this.pos.y, 0.62); nxx = this.pos.x; nzz = this.pos.z; this.vel.x = this.vel.z = 0; }
+    }
+    if (gr && ny <= gr.y + 0.001 && this.vel.y <= 0) { this.pos.set(nxx, damp(this.pos.y, gr.y, 30, dt) > gr.y ? gr.y : gr.y, nzz); if (!this.grounded) { g.audio?.sfx('land'); } this.grounded = true; this.vel.y = 0; this.surf = gr.surf; this.ice = !!gr.surf.isIce; }
+    else if (gr && this.grounded && ny > gr.y && this.vel.y <= 0 && ny - gr.y < 0.2) { this.pos.set(nxx, gr.y, nzz); }
     else { // airborne or blocked by wall/step
-      if (gr && gr.y > this.pos.y + 0.62) { /* wall: slide */ } else { this.pos.x = nx; this.pos.z = nz; }
+      if (gr && gr.y > this.pos.y + 0.62) { /* wall: slide */ } else { this.pos.x = nxx; this.pos.z = nzz; }
       this.pos.y = ny; if (this.grounded && !gr) { this.grounded = false; } else if (!gr) this.grounded = false; this.ice = false;
     }
     terrain.push(this.pos, this.radius, this.pos.y);
