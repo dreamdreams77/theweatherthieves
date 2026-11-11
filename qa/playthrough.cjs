@@ -63,7 +63,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   const away = await ground(-36, -10); c = await faceCamera(away); await page.mouse.move(c.x, c.y, { steps: 6 }); await sleep(3500);
   c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400);
   check('mirror unshaded after moving Gertrude', await ev(() => __game.world.mirror.shaded === null && __game.world.mirror.lit > 0.8), 'lit=' + (await ev(() => __game.world.mirror.lit)).toFixed(2));
-  await flush(); await press('Digit4'); const ice = await ev(() => __game.world.ice.pos.toArray());
+  await flush(); await press('Digit4'); const ice = await ev(() => { const i = __game.world.ice.pos; return [i.x, i.y - 1.4, i.z]; }); // aim at the ice's base on the ground, like a player would
   await holdAt(ice, () => __game.world.ice.melt >= 1, 45000); check('ice melted with sunlight (Sun tool + mouse)', await ev(() => __game.world.ice.melt >= 1), 'melt=' + (await ev(() => __game.world.ice.melt)).toFixed(2));
   await until(() => __game.world.gate.open > 0.9, 8000); await flush(); await shot(page, OUT + 'play-04-sun-gate-open.png'); check('Sun Gate open', await ev(() => __game.world.gate.open > 0.9));
   // ---- 5. to Windmill Rise
