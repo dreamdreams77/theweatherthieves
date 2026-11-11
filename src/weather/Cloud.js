@@ -6,6 +6,8 @@ import { rng, damp, clamp, lerp, TAU } from '../core/Utils.js';
 
 const dropGeo = new THREE.BoxGeometry(0.018, 0.55, 0.018);
 const dropMat = new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.7, depthWrite: false });
+const snowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthWrite: false });
+const flakeGeo = new THREE.IcosahedronGeometry(0.07, 0);
 
 /** A living cloud: grab it, stretch/compress it, make it rain. */
 export class Cloud {
@@ -29,7 +31,7 @@ export class Cloud {
     this.face.set('neutral');
     this.group.position.copy(this.pos); scene.add(this.group);
     // rain
-    this.N = quality.mobile ? 140 : 280; this.rainMesh = new THREE.InstancedMesh(dropGeo, dropMat, this.N); this.rainMesh.frustumCulled = false; this.rainMesh.count = 0; scene.add(this.rainMesh);
+    this.N = quality.mobile ? 140 : 280; this.rainMesh = new THREE.InstancedMesh(dropGeo, dropMat, this.N); this.precip = 'rain'; this.rainMesh.frustumCulled = false; this.rainMesh.count = 0; scene.add(this.rainMesh);
     this.drops = Array.from({ length: this.N }, () => ({ x: 0, y: 0, z: 0, v: 0, gy: 0, a: 0, d: 0 })); this.dropsInit = false;
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(1, 1, 1);
     this.radius = 0.0; this.say = null;
@@ -39,7 +41,7 @@ export class Cloud {
   dispose() { this.scene.remove(this.group); this.scene.remove(this.rainMesh); }
   update(dt, t, env) {
     const { terrain, wind, spawnSplash, refill } = env;
-    this.cooldown -= dt;
+    this.cooldown -= dt; if (this.snowT > 0) this.snowT -= dt;
     this.stretch = damp(this.stretch, this.stretchT, 7, dt);
     this.grab = damp(this.grab, this.held ? 1 : 0, 8, dt);
     // motion
@@ -70,6 +72,7 @@ export class Cloud {
     this.dark = damp(this.dark, 1 - this.moisture * 0.0 - (this.moisture > 0.3 ? 0.5 : 0), 2, dt) * 0 + (1 - this.moisture) * 0; // reserved
     // colour: heavier = greyer, stormy when held & raining
     const gray = this.raining * 0.15 + this.grab * 0.0; this.bodyMat.color.setScalar(1 - gray); this.bodyMat.emissiveIntensity = 0.22 - gray * 0.5 + this.grab * 0.12;
+    if (this.rainMesh.userData.mode !== this.precip) { this.rainMesh.userData.mode = this.precip; this.rainMesh.geometry = this.precip === 'snow' ? flakeGeo : dropGeo; this.rainMesh.material = this.precip === 'snow' ? snowMat : dropMat; }
     this.updateRain(dt, terrain, wind, spawnSplash);
     // expression
     if (this.faceG.visible) this.face.update(dt, t); this.faceG.rotation.z = Math.sin(t * 1.2 + this.seed) * 0.03;
@@ -86,9 +89,9 @@ export class Cloud {
     for (let i = 0; i < n; i++) {
       const d = D[i];
       if (d.a === 0 || d.y <= d.gy) {
-        if (d.a === 1 && d.y <= d.gy && Math.random() < 0.035 && spawnSplash) spawnSplash(d.x, d.gy, d.z);
+        if (d.a === 1 && d.y <= d.gy && this.precip !== 'snow' && Math.random() < 0.035 && spawnSplash) spawnSplash(d.x, d.gy, d.z);
         const ang = Math.random() * TAU, rr = Math.sqrt(Math.random()) * rad;
-        d.x = this.pos.x + Math.cos(ang) * rr; d.z = this.pos.z + Math.sin(ang) * rr; d.y = bottom - Math.random() * 1.5; d.v = 14 + Math.random() * 5; d.a = 1;
+        d.x = this.pos.x + Math.cos(ang) * rr; d.z = this.pos.z + Math.sin(ang) * rr; d.y = bottom - Math.random() * 1.5; d.v = this.precip === 'snow' ? 2.2 + Math.random() * 1.6 : 14 + Math.random() * 5; d.a = 1;
         const top = terrain.topAt(d.x, d.z);
         d.gy = top === -Infinity ? this.pos.y - 26 : Math.min(top, d.y - 0.5);
       }
@@ -99,7 +102,9 @@ export class Cloud {
     if (!act && this.raining < 0.03) { this.rainMesh.count = 0; for (const d of D) d.a = 0; }
   }
   /** does the rain cylinder cover (x,y,z)? returns 0..1 intensity */
+  snowAt(x, y, z) { if (this.precip !== 'snow') return 0; const sv = this.precip; this.precip = 'rain'; const v = this.rainAt(x, y, z); this.precip = sv; return v; }
   rainAt(x, y, z) {
+    if (this.precip === 'snow') return 0;
     if (this.raining < 0.1 || y > this.pos.y - 0.3) return 0;
     const d = Math.hypot(x - this.pos.x, z - this.pos.z), r = this.footprint; if (d > r) return 0;
     return this.raining * (1 - (d / r) ** 3) * clamp(this.density, 0.5, 1.8);

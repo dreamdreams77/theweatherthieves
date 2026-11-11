@@ -23,9 +23,11 @@ const { launch, sleep, check, results } = require('./lib.cjs');
     // wrong order test: reset and do tall first
     // 5. tickle the Dry Cloud with wind three times
     T.select(2); g.player.pos.set(w.fountainPos.x - 5, w.fountainPos.y, w.fountainPos.z + 2); nd(); for (let i = 0; i < 3; i++) { g.input.down = true; aim(w.dry.pos.x, w.dry.pos.y, w.dry.pos.z); g.sim(1.2); g.input.down = false; g.sim(2.6); nd(); }
-    out.laughs = w.laughs; out.dryOpen = !!w.dryOpen; g.sim(12); nd(); out.flagsFreed = g.narr.flags.freed; out.endShown = !document.getElementById('end').classList.contains('hidden'); out.endBtn = document.getElementById('endNext').style.display !== 'none' ? document.getElementById('endNext').textContent : '(none)';
+    out.laughs = w.laughs; out.dryOpen = !!w.dryOpen; g.sim(3);
     return out;
   });
+  await sleep(3500); // the finale dialogue starts on a real-time timer
+  Object.assign(r, await page.evaluate(() => { const g = __game, out = {}; for (let i = 0; i < 80; i++) { if (g.ui.dlg.active) { g.ui.advance(); g.ui.advance(); } g.sim(0.4); } out.flagsFreed = g.narr.flags.freed; out.endShown = !document.getElementById('end').classList.contains('hidden'); out.endBtn = document.getElementById('endNext').style.display !== 'none' ? document.getElementById('endNext').textContent : '(none)'; return out; }));
   console.log(JSON.stringify(r));
   check('umbrella pads open with rain', r.padsOpen.every((o) => o > 0.9), JSON.stringify(r.padsOpen));
   check('bounce 1 lands on Orla’s roof', r.afterB1[1] > 4, JSON.stringify(r.afterB1)); check('bounce 2 lands on bakery roof', r.afterB2[1] > 8, JSON.stringify(r.afterB2)); check('bounce 3 lands on the clock-tower balcony', Math.abs(r.afterB3[1] - r.balconyY) < 1.2, JSON.stringify(r.afterB3) + ' vs ' + r.balconyY);

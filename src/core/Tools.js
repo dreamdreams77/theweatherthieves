@@ -62,19 +62,19 @@ export class Tools {
       const c = this.held; const dx = aim.point.x - p.pos.x, dz = aim.point.z - p.pos.z; const dist = Math.hypot(dx, dz), maxD = 26; const k = dist > maxD ? maxD / dist : 1;
       const tx = p.pos.x + dx * k, tz = p.pos.z + dz * k; const top = Math.max(g.terrain.topAt(tx, tz), p.pos.y);
       c.target = c.target || new THREE.Vector3(); c.target.set(tx, Math.max(top, aim.ground ? aim.point.y : top) + 4.6 + (c.stretch - 1) * 0.4, tz);
-      c.rainOn = tool === 'rain' && useDown; c.rainTarget = 1; this.usingRain = c.rainOn;
+      const snowing = tool === 'frost' && useDown; if (snowing) c.snowT = 5; c.precip = (snowing || c.snowT > 0) ? 'snow' : 'rain'; c.rainOn = (tool === 'rain' && useDown) || snowing || c.snowT > 0; c.rainTarget = 1; this.usingRain = c.rainOn;
       if (c.rainOn && c.moisture <= 0.01 && useJust) g.ui.toast('This cloud has run dry — let it rest, or park it near a rising waterfall.');
       if (c.rainOn) { p.facing = Math.atan2(c.pos.x - p.pos.x, c.pos.z - p.pos.z); p.juno.aim('L', _v.set(0.2, 1.3, 0.8).normalize()); p.juno.aim('R', _v.set(-0.2, 1.3, 0.8).normalize()); }
       else p.juno.aim('R', new THREE.Vector3(Math.sin(Math.atan2(dx, dz) - p.yaw) * 0.5, 0.9, Math.cos(Math.atan2(dx, dz) - p.yaw) * 0.5).normalize());
       g.ui.setMeter(c.moisture, c);
     } else { this.usingRain = false; g.ui.setMeter(null); }
-    for (const c of w.clouds) if (c !== this.held && c.personal) { c.rainOn = true; c.rainTarget = 0.34; } else if (c !== this.held) c.rainOn = !!c.forceRain;
+    for (const c of w.clouds) if (c !== this.held && c.personal) { c.rainOn = true; c.rainTarget = 0.34; } else if (c !== this.held) { c.rainOn = !!c.forceRain || c.snowT > 0; c.precip = c.snowT > 0 || c.forceSnow ? 'snow' : 'rain'; }
     // wind
     this.usingWind = false; let gust = false, frost = false;
     const aimDir = _d.subVectors(aim.point, origin); aimDir.y *= 0.35; if (aimDir.lengthSq() < 0.01) aimDir.set(Math.sin(p.yaw), 0, Math.cos(p.yaw)); aimDir.normalize();
     if (tool === 'wind' && useDown) { gust = true; this.usingWind = true; p.facing = Math.atan2(aimDir.x, aimDir.z); const loc = _v.copy(aimDir).applyAxisAngle(new THREE.Vector3(0, 1, 0), -p.yaw); p.juno.aim('L', loc.clone().add(new THREE.Vector3(-0.2, 0, 0)).normalize()); p.juno.aim('R', loc.clone().add(new THREE.Vector3(0.2, 0, 0)).normalize()); p.setExpr('cringe', 0.2); }
     w.setGust(gust, _v.copy(origin).addScaledVector(aimDir, 0.9), aimDir); w.gust.strength = 17;
-    if (tool === 'frost' && useDown) { frost = true; p.facing = Math.atan2(aimDir.x, aimDir.z); const loc = _v.copy(aimDir).applyAxisAngle(new THREE.Vector3(0, 1, 0), -p.yaw); p.juno.aim('R', loc.clone().normalize()); p.setExpr('smug', 0.2); }
+    if (tool === 'frost' && useDown && !this.held) { frost = true; p.facing = Math.atan2(aimDir.x, aimDir.z); const loc = _v.copy(aimDir).applyAxisAngle(new THREE.Vector3(0, 1, 0), -p.yaw); p.juno.aim('R', loc.clone().normalize()); p.setExpr('smug', 0.2); }
     w.setFrost(frost, _v.copy(origin).addScaledVector(aimDir, 0.7), aimDir);
     // sun: aim nearest mirror at cursor
     this.sunUsing = false; const m = (g.world.mirrors || []).reduce((b, mm) => (!b || Math.hypot(mm.pos.x - p.pos.x, mm.pos.z - p.pos.z) < Math.hypot(b.pos.x - p.pos.x, b.pos.z - p.pos.z) ? mm : b), null);
