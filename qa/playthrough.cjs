@@ -32,6 +32,10 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   const y0 = (await S()).yaw; await page.mouse.move(640, 360); await page.mouse.down({ button: 'right' }); await page.mouse.move(740, 340, { steps: 5 }); await page.mouse.up({ button: 'right' }); await sleep(200); check('right-drag orbits camera', Math.abs((await S()).yaw - y0) > 0.2);
   const y1 = (await ev(() => __game.player.pos.y)); await press('Space'); await sleep(250); const y2 = await ev(() => __game.player.pos.y); check('Space jumps', y2 > y1 + 0.3, 'dy=' + (y2 - y1).toFixed(2));
   await sleep(900);
+  if (process.env.START === 'meadow') { // DEBUG ONLY: skip to the Meadow by teleport (never used for the real verification run)
+    await ev(() => { const g = __game, w = g.world; w.blooms.forEach((b) => { b.water = 1; b.bloomed = true; g.narr.onBloom(b); }); g.player.pos.set(-27, w.B.heightAt(-27, -14), -14); g.player.safe.copy(g.player.pos); g.narr.flags.visitedB = true; g.companion.pos.set(-25, w.B.heightAt(-25, -13), -13); });
+    await sleep(1500); await flush();
+  } else {
   // ---- 2. puzzle 1: grab Fen's cloud with the mouse, rain on blooms
   await press('Digit1'); let c = await faceCamera(((await S()).fenCloud)); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(80); await page.mouse.up(); await sleep(400);
   check('clicked cloud is picked up (Cloud tool)', (await S()).held === 'fen', 'held=' + (await S()).held); await flush();
@@ -52,6 +56,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   check('reached bridge', await walkTo(br[0][0], br[0][2], 1.2)); check('crossed bridge', await walkTo(br[1][0], br[1][2], 1.2)); await walkTo(-27, -14, 1.8);
   await until(() => __game.narr.flags.visitedB, 3000); await flush(); check('arrived Mirror Meadow', (await S()).f.visitedB);
   await shot(page, OUT + 'play-03-meadow.png');
+  }
   // ---- 4. puzzle 2: move Gertrude, aim mirror, melt ice
   await flush(); await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); for (let i = 0; i < 5 && (await S()).held !== 'gertrude'; i++) { await flush(); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(350); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); }
   check('Gertrude grabbed', (await S()).held === 'gertrude'); await flush();
