@@ -24,6 +24,7 @@ export class Player {
     const acc = this.grounded ? (this.ice ? 6 : 42) : 14;
     const wishX = dir.x * spMax, wishZ = dir.z * spMax;
     this.vel.x = damp(this.vel.x, wishX, acc / spMax, dt); this.vel.z = damp(this.vel.z, wishZ, acc / spMax, dt);
+    if (this.bounce) { if (this.grounded && this.bounce.t > 0.25) this.bounce = null; else { this.vel.x = this.bounce.vx; this.vel.z = this.bounce.vz; this.bounce.t += dt; } }
     if (this.ice && mag < 0.1) { this.vel.x = damp(this.vel.x, this.vel.x, 1, dt); }
     // jump
     this.jumpBuf = input.jump && !this.locked ? 0.12 : this.jumpBuf - dt; this.coyote = this.grounded ? 0.12 : this.coyote - dt;
@@ -44,6 +45,7 @@ export class Player {
     }
     terrain.push(this.pos, this.radius, this.pos.y);
     if (this.grounded && this.surf && this.surf.islandSafe !== false) { const i = terrain.islands.find((s) => s.heightAt(this.pos.x, this.pos.z) !== -Infinity); if (i && i.nearEdge(this.pos.x, this.pos.z) < 0.72 || (this.surf && !terrain.islands.includes(this.surf))) this.safe.copy(this.pos); }
+    this.game.world.padUpdate?.(this, dt);
     // fell
     if (this.pos.y < -40 || this.pos.y < this.safe.y - 28) { this.respawn(); }
     // facing

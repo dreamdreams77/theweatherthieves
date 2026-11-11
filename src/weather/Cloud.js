@@ -43,7 +43,7 @@ export class Cloud {
     this.stretch = damp(this.stretch, this.stretchT, 7, dt);
     this.grab = damp(this.grab, this.held ? 1 : 0, 8, dt);
     // motion
-    if (this.held && this.target) {
+    if (this.fixed) { this.vel.set(0, 0, 0); } else if (this.held && this.target) {
       const dx = this.target.x - this.pos.x, dy = this.target.y - this.pos.y, dz = this.target.z - this.pos.z;
       this.vel.x += (dx * 18 - this.vel.x * 6) * dt; this.vel.y += (dy * 18 - this.vel.y * 6) * dt; this.vel.z += (dz * 18 - this.vel.z * 6) * dt;
     } else {
@@ -53,7 +53,7 @@ export class Cloud {
     }
     { const f = wind.force(this.pos, 4), br = wind.breeze; this.vel.x += (f.x - br.x * 0.9) * dt * 2.6; this.vel.y += f.y * dt * 2.6; this.vel.z += (f.z - br.z * 0.9) * dt * 2.6; } // only real gusts shove clouds; the breeze is ambient
     this.vel.multiplyScalar(1 - Math.min(1, dt * 0.3));
-    this.pos.addScaledVector(this.vel, dt);
+    if (!this.fixed) this.pos.addScaledVector(this.vel, dt);
     if (!this.held) { const lim = 150; if (Math.hypot(this.pos.x, this.pos.z) > lim) { this.vel.x -= this.pos.x * dt * 0.05; this.vel.z -= this.pos.z * dt * 0.05; } }
     this.group.position.copy(this.pos);
     // squash & stretch in x/z preserving volume

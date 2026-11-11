@@ -14,11 +14,11 @@ export class Sky {
     this.group = new THREE.Group(); scene.add(this.group);
     this.restore = { value: 0 };
     this.sunDir = sunDir.clone().normalize();
-    const u = { uRestore: this.restore, uSun: { value: this.sunDir }, uTime: G.uTime };
+    this.tint = { value: new THREE.Vector4(0.5, 0.5, 0.5, 0) }; const u = { uRestore: this.restore, uSun: { value: this.sunDir }, uTime: G.uTime, uTint: this.tint };
     this.dome = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 20), new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false, uniforms: u,
       vertexShader: 'varying vec3 vD; void main(){ vD=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); gl_Position.z=gl_Position.w; }',
-      fragmentShader: `uniform float uRestore,uTime; uniform vec3 uSun; varying vec3 vD; ${NOISE}
+      fragmentShader: `uniform float uRestore,uTime; uniform vec3 uSun; uniform vec4 uTint; varying vec3 vD; ${NOISE}
       void main(){
         vec3 d=normalize(vD); float h=d.y; float r=uRestore;
         vec3 zen=mix(vec3(.23,.27,.45),vec3(.16,.42,.86),r);
@@ -33,6 +33,7 @@ export class Sky {
         vec2 uv=d.xz/(abs(h)+.35)*2.2+uTime*.004;
         float w=smoothstep(.45,.9,fbm(uv*vec2(1.,3.)))*smoothstep(.0,.25,h)*.35;
         col=mix(col,mix(vec3(.9,.88,.95),vec3(1.,.93,.86),r),w);
+        float lum=dot(col,vec3(.299,.587,.114)); col=mix(col,uTint.rgb*(.35+lum*.9),uTint.a);
         gl_FragColor=vec4(col,1.); }`,
     }));
     this.dome.renderOrder = -10; this.group.add(this.dome);
@@ -41,7 +42,7 @@ export class Sky {
     this.sea = new THREE.Mesh(new THREE.CircleGeometry(1500, 64).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, fog: false, uniforms: { ...u, uCenter: { value: new THREE.Vector3() } },
       vertexShader: 'varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
-      fragmentShader: `uniform float uRestore,uTime; uniform vec3 uSun; varying vec3 vW; ${NOISE}
+      fragmentShader: `uniform float uRestore,uTime; uniform vec3 uSun; uniform vec4 uTint; varying vec3 vW; ${NOISE}
       void main(){
         vec2 p=vW.xz*.006+vec2(uTime*.004,uTime*.002);
         float n=fbm(p*1.3)*1.0+fbm(p*4.)*.35;
@@ -54,6 +55,7 @@ export class Sky {
         float dist=length(vW.xz-cameraPosition.xz);
         c=mix(c,hor,smoothstep(120.,1100.,dist));
         float a=mix(.55,1.,dens)*(1.-smoothstep(900.,1400.,dist));
+        float lm=dot(c,vec3(.299,.587,.114)); c=mix(c,uTint.rgb*(.35+lm*.9),uTint.a);
         gl_FragColor=vec4(c,a); }`,
     }));
     this.sea.position.y = -52; this.group.add(this.sea);

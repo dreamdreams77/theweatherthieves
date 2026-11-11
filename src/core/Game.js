@@ -15,10 +15,12 @@ import { UI } from '../ui/UI.js';
 import { AudioManager } from '../audio/Audio.js';
 import { Narrative, Say } from '../puzzles/Narrative.js';
 import * as S from '../ui/story.js';
+import { Progress } from './Progress.js';
+import { CHAPTERS } from '../chapters/index.js';
 
 export class Game {
   constructor(canvas) {
-    this.canvas = canvas; this.state = 'loading'; this.t = 0; this.cinematic = false; this.shotT = 0; this.restore = 0; this.restoreT = 0; this.fenHappy = false;
+    this.canvas = canvas; this.state = 'loading'; this.t = 0; this.cinematic = false; this.shotT = 0; this.restore = 0; this.restoreT = 0; this.fenHappy = false; this.chapterNo = 1; this.palette = { fogA: 0xb9b0c4, fogB: 0xf2d6bc, tint: 0x888888, tintAmt: 0, density: [0.0078, 0.0058] };
     const mobile = isTouch() || Math.min(innerWidth, innerHeight) < 520; this.quality = { mobile, dpr: Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2), shadow: mobile ? 1024 : 2048 }; this.dpr = this.quality.dpr;
     const qs = new URLSearchParams(location.search); this.noRender = qs.has('norender');
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance', preserveDrawingBuffer: this.noRender });
@@ -37,10 +39,11 @@ export class Game {
   }
   resize() { const w = innerWidth, h = innerHeight; this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w / h < 0.8 ? 62 : 52; this.camera.updateProjectionMatrix(); this.rig.fov = this.camera.fov; }
   build(progress) {
-    this.world = new SunkenSky(this); progress?.(0.7);
+    Progress.load(); const before0 = new Set(this.scene.children);
+    this.world = new SunkenSky(this); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
     this.ui = new UI(this); this.say = new Say(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
-    this.world.fenCloud.owner = this.companion; this.narr.init(); this.ui.setTool(0);
+    this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = [...this.weather.reactives]; this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());
     // resume position
@@ -48,16 +51,39 @@ export class Game {
     this.rig.snap(this.player.pos); this.camera.position.set(-18, 12, 30); progress?.(1);
     this.state = 'title'; this.titleT = 0;
   }
+  /** Tear down the current chapter world and build another one (player, companion, tools, audio and UI persist). */
+  loadChapter(n) {
+    const C = CHAPTERS[n]; if (!C) return; this.state = 'loading'; this.cinematic = false; this.tools.drop?.(); this.ui.dlg.active = false; document.getElementById('dlg')?.classList.add('hidden');
+    const ov = document.getElementById('chapterCard'); if (ov) { ov.querySelector('.cc-no').textContent = 'Chapter ' + n; ov.querySelector('.cc-t').textContent = C.title; ov.classList.add('show'); }
+    setTimeout(() => {
+      this.disposeWorld(); this.chapterNo = n; Progress.setChapter(n);
+      const before = new Set(this.scene.children); this.world = new C.World(this); this.worldObjs = this.scene.children.filter((c) => !before.has(c));
+      this.narr = new C.Narr(this); this.narr.restore?.(); this.narr.init();
+      this.palette = { fogA: 0xb9b0c4, fogB: 0xf2d6bc, tint: 0x888888, tintAmt: 0, density: [0.0078, 0.0058], ...C.palette };
+      this.setRestore(C.restore ?? 0.35, true); this.weather.ambient = C.ambient || null; this.audio.setChapter?.(n);
+      const sp = this.world.spawn; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
+      this.world.fenCloud && (this.world.fenCloud.owner = this.companion);
+      this.rig.snap(this.player.pos); this.ui.setGlints(0); this.ui.setTool(0); this.ui.refreshMemories?.(); this.ui.showEnd && document.getElementById('end').classList.add('hidden');
+      this.ui.setObjective(C.title, ''); this.state = 'play'; this.shot(null);
+      setTimeout(() => { ov?.classList.remove('show'); this.narr.begin?.(); }, 1800);
+    }, 900);
+  }
+  chapterTitle() { return this.chapterNo === 1 ? 'The Sunken Sky' : (CHAPTERS[this.chapterNo]?.title || 'This chapter'); }
+  disposeWorld() {
+    for (const c of this.weather.clouds) c.dispose?.(); this.weather.clouds = []; this.weather.beams.length = 0; this.weather.reactives = [...(this.weather.keep || [])];
+    for (const o of this.worldObjs || []) { this.scene.remove(o); o.traverse?.((m) => { if (m.geometry) m.geometry.dispose?.(); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => x.dispose?.()); }); }
+    this.worldObjs = []; const t = this.terrain; t.islands.length = 0; t.surfaces.length = 0; t.colliders.length = 0; this._grass = null;
+  }
   spawnFor(i) { const w = this.world; const pts = { home: [3, 8], meadow: [-26, -13], rise: [-19, -48], summit: [20, -61] }[i.id] || [3, 8]; const y = i.heightAt(pts[0], pts[1]); return new THREE.Vector3(pts[0], y, pts[1]); }
   setRestore(v, instant) { this.restoreT = v; if (instant) { this.restore = v; this.applyMood(); } }
   applyMood() {
     const r = this.restore, c = new THREE.Color(); G.uSat.value = lerp(0.58, 1.08, r); this.sky.restore.value = r;
     this.sun.intensity = lerp(1.5, 3.4, r); this.sun.color.set(0xe8e4ff).lerp(c.set(0xffdfae), r); this.hemi.intensity = lerp(1.15, 0.95, r); this.hemi.color.set(0xb8c4ff).lerp(c.set(0x9fc8ff), r); this.hemi.groundColor.set(0x9a8a78).lerp(c.set(0xb08a68), r);
-    this.scene.fog.color.set(0xb9b0c4).lerp(c.set(0xf2d6bc), r); this.scene.fog.density = lerp(0.0078, 0.0058, r); this.fill.intensity = lerp(0.55, 0.35, r); this.renderer.toneMappingExposure = lerp(1.0, 1.05, r); this.scene.environmentIntensity = lerp(0.3, 0.5, r);
+    const P = this.palette; this.scene.fog.color.set(P.fogA).lerp(c.set(P.fogB), r); this.scene.fog.density = lerp(P.density[0], P.density[1], r); this.sky.tint.value.set(new THREE.Color(P.tint).r, new THREE.Color(P.tint).g, new THREE.Color(P.tint).b, P.tintAmt); this.fill.intensity = lerp(0.55, 0.35, r); this.renderer.toneMappingExposure = lerp(1.0, 1.05, r); this.scene.environmentIntensity = lerp(0.3, 0.5, r);
   }
   shot(s, dur = 4) { this.rig.setShot(s); this.shotT = s ? dur : 0; }
   shake(a) { this.rig.shake = a; }
-  entityOf(who) { if (who === 'juno') return { pos: this.player.pos, yaw: this.player.yaw, head: 1.35, face: this.player.juno.face, c: this.player, rig: this.player.juno }; if (who === 'fen') return { pos: this.companion.pos, yaw: this.companion.yaw, head: 2.1, face: this.companion.fen.face, c: this.companion, rig: this.companion.fen }; if (who === 'sunny') return { pos: this.world.sunny.group.getWorldPosition(new THREE.Vector3()), yaw: Math.PI * 0.2, head: 0, face: this.world.sunny.face, c: null, rig: null }; return null; }
+  entityOf(who) { const npc = (this.world.npcs || []).find((n) => n.id === who); if (npc) return { pos: npc.pos, yaw: npc.yaw, head: 1.45 * npc.k * (npc.spec.tall ?? 1), face: npc.face, c: npc, rig: npc }; if (who === 'juno') return { pos: this.player.pos, yaw: this.player.yaw, head: 1.35, face: this.player.juno.face, c: this.player, rig: this.player.juno }; if (who === 'fen') return { pos: this.companion.pos, yaw: this.companion.yaw, head: 2.1, face: this.companion.fen.face, c: this.companion, rig: this.companion.fen }; if (who === 'sunny' && this.world.sunny) return { pos: this.world.sunny.group.getWorldPosition(new THREE.Vector3()), yaw: Math.PI * 0.2, head: 0, face: this.world.sunny.face, c: null, rig: null }; return null; }
   /** play dialogue with cinematic speaker framing. opts: {noLock, shot=true, onEnd} */
   dialogue(lines, opts = {}) {
     if (opts.noLock) { // non-blocking: floating barks one after another
@@ -69,7 +95,7 @@ export class Game {
     this.ui.play(lines, {
       onLine: (l) => {
         const e = this.entityOf(l.who); this.speaker = e; this.talkWho = l.who;
-        if (e) { if (l.ex) { e.face.set(l.ex); if (e.c === this.player) this.player.setExpr(l.ex, 30); } e.face.talk = 1; if (l.anim && e.rig) e.rig.play(l.anim); if (opts.shot !== false) {
+        if (e) { if (l.ex) { e.face.set(l.ex); if (e.c === this.player) this.player.setExpr(l.ex, 30); } e.face.talk = 1; if (e.c && e.c !== this.player && e.c.talk !== undefined) e.c.talk = 30; if (l.anim && e.rig) e.rig.play(l.anim); if (opts.shot !== false) {
           const head = e.pos.clone().add(new THREE.Vector3(0, e.head, 0)); const side = l.who === 'juno' ? 0.55 : -0.6; const dist = l.who === 'sunny' ? 7.5 : 3.4 + (l.who === 'fen' ? 0.8 : 0);
           const fx = Math.sin(e.yaw + side), fz = Math.cos(e.yaw + side); const pos = head.clone().add(new THREE.Vector3(fx * dist, 0.15, fz * dist)); this.rig.setShot({ pos, look: head.clone().add(new THREE.Vector3(0, -0.05, 0)) }); this.shotT = 999; } }
         else if (opts.shot !== false) { /* narrator keeps previous shot */ }
@@ -78,8 +104,12 @@ export class Game {
       onEnd: () => { this.player.locked = this.cinematic ? true : false; this.rig.setShot(this.cinematic ? this.rig.shot : null); this.speaker = null; this.shotT = 0; this.player.talk = 0; this.companion.talk = 0; this.world.sunny.face.talk = 0; opts.onEnd?.(); },
     });
   }
-  talkEnd() { const e = this.speaker; if (e) e.face.talk = 0; this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) this.world.sunny.face.talk = 0; }
-  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
+  talkEnd() { const e = this.speaker; if (e) { e.face.talk = 0; if (e.c && e.c.talk !== undefined) e.c.talk = 0; } this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) this.world.sunny.face.talk = 0; }
+  talkNPC(npc) {
+    if (this.state !== 'play') return; if (Math.hypot(npc.pos.x - this.player.pos.x, npc.pos.z - this.player.pos.z) > 9) { this.say.juno('Let me get closer first!'); return; }
+    const lines = this.narr.npcLines?.(npc); if (!lines || !lines.length) return; npc.react = 6; this.dialogue(lines, { shot: true, onEnd: () => (npc.react = 0) });
+  }
+  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
   begin(newGame) {
     this.audio.start(); this.audio.setMuted(this.audio.muted);
     if (newGame) { this.narr.reset(); location.reload(); return; }
@@ -130,7 +160,7 @@ export class Game {
     if (!this._grass) { this._grass = []; this.scene.traverse((o) => { if (o.userData?.island && o.isGroup) this._grass.push(o); }); }
     for (const g of this._grass) { const i = g.userData.island; g.visible = Math.hypot(cp.x - i.x, cp.z - i.z) < i.r + 70; }
     for (const c of this.weather.clouds) c.faceG.visible = c.group.position.distanceToSquared(cp) < 32 * 32;
-    for (const pk of this.world.puffkins) pk.fg.visible = pk.pos.distanceToSquared(cp) < 28 * 28;
+    for (const pk of (this.world.puffkins || [])) pk.fg.visible = pk.pos.distanceToSquared(cp) < 28 * 28;
     const wh = this.world.whale; if (wh) wh.group.visible = wh.group.position.distanceToSquared(cp) < 300 * 300;
   }
   cloudEnv() { return { terrain: this.terrain, wind: this.weather, spawnSplash: this.weather.spawnSplash, refill: (p) => this.world.refillAt(p), camDir: { x: this.camera.position.x - this.player.pos.x, z: this.camera.position.z - this.player.pos.z }, lookTarget: this.player.pos.clone().sub(this.camera.position).multiplyScalar(0).add(new THREE.Vector3((this.player.pos.x - 0) * 0, 0, 1)) }; }

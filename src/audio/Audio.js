@@ -31,7 +31,7 @@ export class AudioManager {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(this.out); o.start(t); o.stop(t + dur + 0.05);
   }
   noise(dur = 0.2, vol = 0.1, freq = 1200, type = 'lowpass') { if (!this.ctx) return; const c = this.ctx, s = c.createBufferSource(); s.buffer = this.noiseBuf; const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; const g = c.createGain(); const t = c.currentTime; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f).connect(g).connect(this.out); s.start(t, Math.random()); s.stop(t + dur + 0.05); }
-  blip(who) { const base = { juno: 520, fen: 150, sunny: 700, cloud: 330, narrator: 260 }[who] || 300; this.tone(base * (0.9 + Math.random() * 0.35), 0.07, 0.05, who === 'fen' ? 'sawtooth' : 'triangle'); }
+  blip(who) { const base = { juno: 520, fen: 150, sunny: 700, cloud: 330, narrator: 260 }[who] || (200 + ([...String(who)].reduce((a, c) => a + c.charCodeAt(0), 0) % 40) * 12); this.tone(base * (0.9 + Math.random() * 0.35), 0.07, 0.05, who === 'fen' ? 'sawtooth' : 'triangle'); }
   sfx(n) {
     if (!this.ctx) return;
     switch (n) {

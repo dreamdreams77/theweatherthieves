@@ -22,12 +22,13 @@ export class Tools {
     _ray.setFromCamera(ndc, camera); const ro = _ray.ray.origin, rd = _ray.ray.direction;
     let best = Infinity, hit = null, type = null;
     const test = (center, rad, obj, ty) => { if (type === 'cloud') return; _v.subVectors(center, ro); const t = _v.dot(rd); if (t < 0 || t > 90) return; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); if (dd < rad && t < best) { best = t; hit = obj; type = ty; } };
-    let cBest = Infinity, cHit = null, cScore = 9; /* the cloud whose centre is closest to the pointer wins */ for (const c of g.weather.clouds) { _v.subVectors(c.pos, ro); const t = _v.dot(rd); if (t < 0 || t > 90) continue; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); const sc = dd / (c.footprint * 0.85 + 0.4); if (sc < 1 && sc < cScore) { cScore = sc; cBest = t; cHit = c; } }
-    const m = g.world.mirror; test(_v.copy(m.pos).add(new THREE.Vector3(0, 2.4, 0)), 1.9, m, 'mirror');
-    for (const p of g.world.puffkins) test(_o.copy(p.pos).add(new THREE.Vector3(0, 0.5, 0)), 0.8, p, 'puffkin');
+    let cBest = Infinity, cHit = null, cScore = 9; /* the cloud whose centre is closest to the pointer wins */ for (const c of g.weather.clouds) { if (c.fixed) continue; _v.subVectors(c.pos, ro); const t = _v.dot(rd); if (t < 0 || t > 90) continue; const dd = _v.sub(_o.copy(rd).multiplyScalar(t)).length(); const sc = dd / (c.footprint * 0.85 + 0.4); if (sc < 1 && sc < cScore) { cScore = sc; cBest = t; cHit = c; } }
+    for (const m of (g.world.mirrors || [])) test(_v.copy(m.pos).add(new THREE.Vector3(0, 2.4, 0)), 1.9, m, 'mirror');
+    for (const n of (g.world.npcs || [])) test(_o.copy(n.pos).add(new THREE.Vector3(0, 1.0 * n.k, 0)), 0.9 * n.k, n, 'npc');
+    for (const p of (g.world.puffkins || [])) test(_o.copy(p.pos).add(new THREE.Vector3(0, 0.5, 0)), 0.8, p, 'puffkin');
     test(_o.copy(g.companion.pos).add(new THREE.Vector3(0, 1.1, 0)), 1.0, g.companion, 'fen');
-    test(_o.copy(g.world.jarPos).add(new THREE.Vector3(0, 3.2, 0)), 2.4, g.world.jar, 'jar');
-    for (const gl of g.world.glints) if (!gl.got) test(gl.pos, 0.9, gl, 'glint');
+    if (g.world.jarPos) test(_o.copy(g.world.jarPos).add(new THREE.Vector3(0, 3.2, 0)), 2.4, g.world.jar, 'jar');
+    for (const gl of (g.world.glints || [])) if (!gl.got) test(gl.pos, 0.9, gl, 'glint');
     if (cHit) { best = cBest; hit = cHit; type = 'cloud'; } // clouds are easy to pick: they win over creatures/props in front of them
     // ground march
     let gp = null; for (let t = 1; t < 120; t += 0.6) { const x = ro.x + rd.x * t, y = ro.y + rd.y * t, z = ro.z + rd.z * t; const top = g.terrain.topAt(x, z); if (top > -Infinity && y <= top + 0.1) { gp = { x, y: top, z, t }; break; } }
@@ -67,7 +68,7 @@ export class Tools {
       else p.juno.aim('R', new THREE.Vector3(Math.sin(Math.atan2(dx, dz) - p.yaw) * 0.5, 0.9, Math.cos(Math.atan2(dx, dz) - p.yaw) * 0.5).normalize());
       g.ui.setMeter(c.moisture, c);
     } else { this.usingRain = false; g.ui.setMeter(null); }
-    for (const c of w.clouds) if (c !== this.held && c.personal) { c.rainOn = true; c.rainTarget = 0.34; } else if (c !== this.held) c.rainOn = false;
+    for (const c of w.clouds) if (c !== this.held && c.personal) { c.rainOn = true; c.rainTarget = 0.34; } else if (c !== this.held) c.rainOn = !!c.forceRain;
     // wind
     this.usingWind = false; let gust = false, frost = false;
     const aimDir = _d.subVectors(aim.point, origin); aimDir.y *= 0.35; if (aimDir.lengthSq() < 0.01) aimDir.set(Math.sin(p.yaw), 0, Math.cos(p.yaw)); aimDir.normalize();
@@ -76,24 +77,25 @@ export class Tools {
     if (tool === 'frost' && useDown) { frost = true; p.facing = Math.atan2(aimDir.x, aimDir.z); const loc = _v.copy(aimDir).applyAxisAngle(new THREE.Vector3(0, 1, 0), -p.yaw); p.juno.aim('R', loc.clone().normalize()); p.setExpr('smug', 0.2); }
     w.setFrost(frost, _v.copy(origin).addScaledVector(aimDir, 0.7), aimDir);
     // sun: aim nearest mirror at cursor
-    this.sunUsing = false; const m = g.world.mirror;
-    if (tool === 'sun' && useDown && g.world.mirrorActive !== false) {
+    this.sunUsing = false; const m = (g.world.mirrors || []).reduce((b, mm) => (!b || Math.hypot(mm.pos.x - p.pos.x, mm.pos.z - p.pos.z) < Math.hypot(b.pos.x - p.pos.x, b.pos.z - p.pos.z) ? mm : b), null);
+    if (m && tool === 'sun' && useDown && g.world.mirrorActive !== false) {
       const dm = Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z);
       if (dm < 30) { const yaw = Math.atan2(aim.point.x - m.pos.x, aim.point.z - m.pos.z); let d = yaw - m.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); m.yaw += d * Math.min(1, dt * 3.5); this.sunUsing = true; p.facing = Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z); p.juno.aim('R', _v.set(Math.sin(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw), 0.5, Math.cos(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw)).normalize()); p.setExpr('excited', 0.25); }
       else if (useJust) g.ui.toast('Get closer to the sun mirror to aim it.');
     }
-    if (tool === 'sun' && (input.keys.has('KeyQ') || input.keys.has('KeyE') || input.stretchHeld)) { const dm = Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z); if (dm < 30) m.yaw += ((input.keys.has('KeyE') || input.stretchHeld > 0 ? -1 : 1) * dt * 1.2); }
+    if (m && tool === 'sun' && (input.keys.has('KeyQ') || input.keys.has('KeyE') || input.stretchHeld)) { const dm = Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z); if (dm < 30) m.yaw += ((input.keys.has('KeyE') || input.stretchHeld > 0 ? -1 : 1) * dt * 1.2); }
     // cursor ring
     this.ring.visible = !locked && aim.ground && (tool !== 'cloud' || !!aim.hit === false); this.ring.position.copy(aim.point).add(new THREE.Vector3(0, 0.08, 0)); const s = 1 + Math.sin(t * 5) * 0.06; this.ring.scale.setScalar((useDown ? 1.3 : 1) * s * (tool === 'rain' && this.held ? this.held.footprint * 0.9 : 1)); this.ring.material.color.set(TOOLS[this.index].color);
     // first-use hooks
     if (useDown && !this.firstUse[tool]) { this.firstUse[tool] = true; g.story?.onToolFirstUse?.(tool); }
     // cursor style
-    g.canvas.style.cursor = aim.hitType === 'cloud' || aim.hitType === 'mirror' || aim.hitType === 'puffkin' || aim.hitType === 'fen' || aim.hitType === 'jar' || aim.hitType === 'glint' ? 'pointer' : 'crosshair';
+    g.canvas.style.cursor = aim.hitType === 'cloud' || aim.hitType === 'mirror' || aim.hitType === 'puffkin' || aim.hitType === 'fen' || aim.hitType === 'jar' || aim.hitType === 'glint' || aim.hitType === 'npc' ? 'pointer' : 'crosshair';
     g.ui.setHover(aim.hitType, aim.hit);
     // poke creatures
     if (useJust && aim.hitType === 'puffkin') { aim.hit.poke(); g.audio?.sfx('squeak'); g.say?.onPuffkin(aim.hit); }
     if (useJust && aim.hitType === 'fen') g.say?.onFen();
     if (useJust && aim.hitType === 'jar') g.puzzles?.onJar();
+    if (useJust && aim.hitType === 'npc') g.talkNPC?.(aim.hit);
     if (useJust && aim.hitType === 'mirror' && tool !== 'sun') g.ui.toast('Select the Sun tool (4), then hold the mouse to aim the mirror.');
     input.tapUse = false;
   }

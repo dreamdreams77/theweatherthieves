@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { TOOLS } from '../core/Tools.js';
 import { clamp } from '../core/Utils.js';
+import { Progress } from '../core/Progress.js';
+import { MEMORY_DB, drawMemory } from './memories.js';
+import { CHAPTERS } from '../chapters/index.js';
 
 const ICON = {
   cloud: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.3 4.4 4.4 0 0 0 7 18z" fill="currentColor"/>',
@@ -12,13 +15,14 @@ const ICON = {
 const svg = (n) => `<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${ICON[n]}</svg>`;
 const NAMES = { juno: 'Juno', fen: 'Fen', sunny: 'Sunny', narrator: '' };
 const COLORS = { juno: '#f3b52f', fen: '#7fb1d6', sunny: '#ffcf55', narrator: '#cbbcff' };
+export function registerSpeaker(id, name, color) { NAMES[id] = name; COLORS[id] = color; }
 
 export class UI {
   constructor(game) {
     this.game = game; this.root = document.getElementById('ui'); this.barks = []; this.toastT = 0; this.hoverEl = null;
     this.root.innerHTML = `
       <div id="obj" class="panel"><div class="obj-h">Chapter 1 · The Sunken Sky</div><div id="objText">&nbsp;</div><div id="objSub"></div></div>
-      <div id="top-r"><div id="glints" class="pill" title="Sky Glints found"><span class="gem"></span><b id="glintN">0</b>/5</div><button id="mute" class="pill" aria-label="Toggle sound">♪</button><button id="helpBtn" class="pill" aria-label="Help">?</button></div>
+      <div id="top-r"><div id="glints" class="pill" title="Sky Glints found"><span class="gem"></span><b id="glintN">0</b>/5</div><button id="mute" class="pill" aria-label="Toggle sound">♪</button><button id="memBtn" class="pill" aria-label="Memories">Memories</button><button id="helpBtn" class="pill" aria-label="Help">?</button></div>
       <div id="toast" class="toast"></div>
       <div id="hover" class="hover"></div>
       <div id="barks"></div>
@@ -33,7 +37,9 @@ export class UI {
         <li><b>2 Rain</b> hold to rain from your cloud · <b>3 Wind</b> hold to blow a gust</li>
         <li><b>4 Sun</b> hold to bounce sunlight from a mirror · <b>5 Frost</b> hold to freeze</li>
         <li><b>F</b> talk / use · <b>Esc</b> close this</li></ul><button id="helpClose" class="btn">Back to the sky</button></div></div>
-      <div id="end" class="overlay hidden"><div class="card end"><div class="eyebrow">Chapter 1 complete</div><h1>The Sunken Sky is saved</h1><p>Sunny is free — and four more jars are waiting.<br>Rain's village, Snow's forest and Thunder's factory still need their weather back.</p><p class="sm" id="endStats"></p><button id="endClose" class="btn">Keep exploring</button></div></div>
+      <div id="end" class="overlay hidden"><div class="card end"><div class="eyebrow">Chapter 1 complete</div><h1>The Sunken Sky is saved</h1><p>Sunny is free — and four more jars are waiting.<br>Rain's village, Snow's forest and Thunder's factory still need their weather back.</p><p class="sm" id="endStats"></p><button id="endNext" class="btn">Next chapter</button> <button id="endClose" class="btn alt">Keep exploring</button></div></div>
+      <div id="chapterCard"><div class="cc-no"></div><div class="cc-t"></div></div>
+      <div id="album" class="overlay hidden"><div class="card wide"><h2>Weather memories</h2><div id="albumGrid"></div><button id="albumClose" class="btn">Close</button></div></div>
       <div id="touch" class="hidden">
         <div id="stick"><i id="knob"></i></div>
         <div id="tbtns"><button id="bUse" class="tb big">USE</button><button id="bJump" class="tb">Jump</button><button id="bMinus" class="tb sm">−</button><button id="bPlus" class="tb sm">+</button><button id="bTalk" class="tb sm">Talk</button></div>
@@ -43,6 +49,8 @@ export class UI {
     this.q('#mute').addEventListener('click', () => { game.audio.start(); game.audio.setMuted(!game.audio.muted); this.q('#mute').classList.toggle('off', game.audio.muted); });
     this.q('#helpBtn').addEventListener('click', () => this.q('#help').classList.remove('hidden')); this.q('#helpClose').addEventListener('click', () => this.q('#help').classList.add('hidden'));
     this.q('#endClose').addEventListener('click', () => this.q('#end').classList.add('hidden'));
+    this.q('#endNext').addEventListener('click', () => { this.q('#end').classList.add('hidden'); game.loadChapter(game.chapterNo + 1); });
+    this.q('#memBtn').addEventListener('click', () => { this.refreshMemories(); this.q('#album').classList.remove('hidden'); }); this.q('#albumClose').addEventListener('click', () => this.q('#album').classList.add('hidden'));
     this.dlg = { lines: [], i: 0, typing: false, text: '', pos: 0, onEnd: null, onLine: null, active: false };
     const adv = () => this.advance(); this.q('#dlg').addEventListener('pointerdown', (e) => { e.stopPropagation(); adv(); });
     addEventListener('keydown', (e) => { if ((e.code === 'Enter' || e.code === 'KeyF' || e.code === 'Space') && this.dlg.active) { e.preventDefault(); adv(); } if (e.code === 'Escape') this.q('#help').classList.add('hidden'); if (e.code === 'KeyH') this.q('#help').classList.toggle('hidden'); });
@@ -68,7 +76,7 @@ export class UI {
   setMeter(m, c) { const el = this.q('#meter'); if (m === null) { el.classList.remove('show'); return; } el.classList.add('show'); this.q('#mtFill').style.width = (m * 100).toFixed(0) + '%'; this.q('#mtName').textContent = c.name; this.q('#mtStretch').textContent = c.stretch > 1.15 ? 'stretched · gentle drizzle' : c.stretch < 0.85 ? 'squashed · heavy downpour' : 'normal'; }
   setObjective(text, sub = '') { const o = this.q('#objText'); if (o.textContent !== text) { o.textContent = text; this.q('#obj').classList.remove('pulse'); void this.q('#obj').offsetWidth; this.q('#obj').classList.add('pulse'); } this.q('#objSub').textContent = sub; }
   setGlints(n) { this.q('#glintN').textContent = n; }
-  setHover(type, obj) { const el = this.q('#hover'); let txt = ''; if (type === 'cloud') txt = obj.name; else if (type === 'mirror') txt = 'Sun mirror'; else if (type === 'puffkin') txt = 'Puffkin'; else if (type === 'fen') txt = 'Fen (press F to chat)'; else if (type === 'jar') txt = 'The Glass Jar'; else if (type === 'glint') txt = 'Sky Glint'; el.textContent = txt; el.classList.toggle('show', !!txt && this.game.state === 'play'); if (txt) { const p = this.game.input.touchMode ? { x: innerWidth / 2, y: innerHeight * 0.46 } : this.game.input.pointerPx; el.style.transform = `translate(${p.x + 16}px,${p.y + 16}px)`; } }
+  setHover(type, obj) { const el = this.q('#hover'); let txt = ''; if (type === 'npc') txt = obj.name + ' (click / F to talk)'; if (type === 'cloud') txt = obj.name; else if (type === 'mirror') txt = 'Sun mirror'; else if (type === 'puffkin') txt = 'Puffkin'; else if (type === 'fen') txt = 'Fen (press F to chat)'; else if (type === 'jar') txt = 'The Glass Jar'; else if (type === 'glint') txt = 'Sky Glint'; el.textContent = txt; el.classList.toggle('show', !!txt && this.game.state === 'play'); if (txt) { const p = this.game.input.touchMode ? { x: innerWidth / 2, y: innerHeight * 0.46 } : this.game.input.pointerPx; el.style.transform = `translate(${p.x + 16}px,${p.y + 16}px)`; } }
   toast(text, ms = 4200) { const t = this.q('#toast'); t.textContent = text; t.classList.add('show'); clearTimeout(this._tt); this._tt = setTimeout(() => t.classList.remove('show'), ms); }
   flash() { const f = this.q('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
   bark(getPos, text, ms = 2600, who = 'fen') {
@@ -93,5 +101,11 @@ export class UI {
     const d = this.dlg; if (!d.active || !d.typing) return; d._t += dt * 46; const n = Math.min(d.text.length, Math.floor(d._t)); if (n !== d.pos) { if (n % 2 === 0) this.game.audio.blip(d.who); d.pos = n; this.q('#dText').textContent = d.text.slice(0, n); }
     if (d.pos >= d.text.length) { d.typing = false; this.q('#dNext').style.opacity = 1; this.game.talkEnd?.(); }
   }
-  showEnd(stats) { this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }
+  refreshMemories() {
+    const grid = this.q('#albumGrid'); grid.innerHTML = ''; const have = Progress.data.memories; const ids = Object.keys(MEMORY_DB);
+    for (const id of ids) { const m = MEMORY_DB[id], div = document.createElement('div'); div.className = 'mem' + (have.includes(id) ? '' : ' locked'); const cv = document.createElement('canvas'); cv.width = 160; cv.height = 90; if (have.includes(id)) drawMemory(cv, id); div.appendChild(cv); const t = document.createElement('div'); t.className = 'mt'; t.textContent = have.includes(id) ? m.title : '???'; const x = document.createElement('div'); x.className = 'mx'; x.textContent = have.includes(id) ? m.text : 'Not found yet'; div.append(t, x); grid.appendChild(div); }
+    this.q('#memBtn').textContent = 'Memories ' + have.length + '/' + ids.length;
+  }
+  showEnd(stats, chapterDone) {
+    const nxt = CHAPTERS[(this.game.chapterNo || 1) + 1]; const b = this.q('#endNext'); b.style.display = nxt ? '' : 'none'; if (nxt) b.textContent = 'Next: ' + nxt.title; if (chapterDone) { this.q('#end .eyebrow').textContent = 'Chapter ' + this.game.chapterNo + ' complete'; this.q('#end h1').textContent = (chapterDone === 1 ? this.game.chapterTitle() : this.game.chapterTitle()) + ' is saved'; } this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }
 }

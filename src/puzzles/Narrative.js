@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as S from '../ui/story.js';
 import { clamp, damp, lerp, TAU } from '../core/Utils.js';
+import { Progress } from '../core/Progress.js';
 
 const pick = (a) => a[(Math.random() * a.length) | 0];
 const SAVE_KEY = 'weather-thieves-save-v1';
@@ -56,7 +57,7 @@ export class Narrative {
   }
   glintCollect(gl) {
     if (gl.got) return; gl.got = true; gl.group.visible = false; this.glints.add(gl.id); this.game.ui.setGlints(this.glints.size); this.game.audio.sfx('glint'); this.game.weather.burst(gl.pos, 0x9fe8ff, 20, 3, 1.2);
-    this.game.ui.toast(S.MEMORIES[gl.id] || 'A tiny memory of weather.', 6000); this.game.player.setExpr('love', 1.2); this.game.player.juno.play('cheer'); this.save();
+    this.game.ui.toast(S.MEMORIES[gl.id] || 'A tiny memory of weather.', 6000); Progress.addMemory(gl.id); this.game.ui.refreshMemories?.(); this.game.player.setExpr('love', 1.2); this.game.player.juno.play('cheer'); this.save();
   }
   // ---------- save/load
   save() {
@@ -125,7 +126,7 @@ export class Narrative {
       g.shot({ pos: F.jp.clone().add(new THREE.Vector3(-11, 5, 10)), look: F.jp.clone().add(new THREE.Vector3(0, 4, 0)) }, 60); this.rainbow.target = 1; this.rainbow.group.position.copy(F.jp).add(new THREE.Vector3(8, -2, -4)); this.rainbow.group.rotation.y = 0.6;
       g.companion.pos.set(w.jarPos.x - 6, w.jarPos.y + 0.6, w.jarPos.z + 3); }
     if (F.phase >= 1) { const s = w.sunny; s.group.position.y = damp(s.group.position.y, 7.5, 1.4, dt); s.group.position.x = damp(s.group.position.x, 0, 2, dt); s.group.scale.setScalar(1 + Math.min(F.t, 4) * 0.35); w.lid.userData.v.y -= 20 * dt; w.lid.position.addScaledVector(w.lid.userData.v, dt); w.lid.rotation.x += dt * 4; }
-    if (F.phase === 1 && F.t > 4.2) { F.phase = 2; this.say(S.FINALE, { noLock: false, onEnd: () => { F.phase = 3; g.cinematic = false; g.player.locked = false; g.state = 'play'; g.shot(null); this.save(); g.ui.showEnd(`Sky Glints found: ${this.glints.size} / 5`); this.finale = null; this.rainbow.target = 0.0; setTimeout(() => (this.rainbow.target = 1), 500); } }); }
+    if (F.phase === 1 && F.t > 4.2) { F.phase = 2; this.say(S.FINALE, { noLock: false, onEnd: () => { F.phase = 3; g.cinematic = false; g.player.locked = false; g.state = 'play'; g.shot(null); this.save(); Progress.complete(1); g.ui.showEnd(`Sky Glints found: ${this.glints.size} / 5`, 1); this.finale = null; this.rainbow.target = 0.0; setTimeout(() => (this.rainbow.target = 1), 500); } }); }
   }
 }
 
