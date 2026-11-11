@@ -93,7 +93,7 @@ export class ForestWorld extends ChapterBase {
     scene.add(mesh(lp.merge(), vcMat({ roughness: 0.95, flatShading: true })));
     // snow ramp zone next to the ledge
     this.ramp = new SnowZone(scene, terrain, -4, -42.6, gy(-4, -42.6), 2.6, 1.7); this.weather.register(this.ramp); this.zones.push(this.ramp);
-    this.mirror = new SunMirror(scene, new THREE.Vector3(-9, ly, -52), this.weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = 1.4; this.mirrors.push(this.mirror); terrain.addCollider({ x: -9, z: -52, r: 1.1, y0: ly - 1, y1: ly + 4 });
+    this.mirror = new SunMirror(scene, new THREE.Vector3(-9, ly, -52), this.weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = -1.6; this.mirrors.push(this.mirror); terrain.addCollider({ x: -9, z: -52, r: 1.1, y0: ly - 1, y1: ly + 4 });
     this.sled = new Sled(scene, terrain, new THREE.Vector3(-1, ly, -50));
     const sledReact = { pos: this.sled.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), radius: 1.5, weather: (dt, w) => this.sled.weather(dt, w) }; this.weather.register(sledReact); this.sledReact = sledReact;
     this.ice = new IceBlock(new THREE.Vector3(-1, ly, -50), 0.95); scene.add(this.ice.group); this.weather.register(this.ice); this.ice.onMelt = () => { this.sled.locked = false; }; this.updaters.push((dt, t) => this.ice.update(dt, t, this.weather));

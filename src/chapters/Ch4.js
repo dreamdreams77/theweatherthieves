@@ -106,7 +106,7 @@ export class FactoryWorld extends ChapterBase {
   clouds() {
     const { scene, weather, q } = this; const mk = (o) => weather.addCloud(new Cloud({ ...o, scene, quality: q }));
     this.fenCloud = mk({ id: 'fen', name: 'Drizzle', pos: new THREE.Vector3(0, 4, 21), size: 1.0, seed: 3, personal: true }); this.fenCloud.face.set('sad'); this.fenCloud.drift.set(0, 0, 0);
-    const a = mk({ id: 'grumble', name: 'Grumblet', pos: new THREE.Vector3(-4, 12, 14), size: 1.3, seed: 71 }); a.face.set('angry'); a.drift.set(0.06, 0, 0.02); const b = mk({ id: 'rumble', name: 'Rumble', pos: new THREE.Vector3(10, 13, 6), size: 1.2, seed: 73 }); b.face.set('neutral'); b.drift.set(-0.06, 0, 0.03); const c = mk({ id: 'nimbus', name: 'Mr. Nimbus', pos: new THREE.Vector3(-18, 16, -4), size: 1.2, seed: 75 }); c.drift.set(0.05, 0, 0);
+    const a = mk({ id: 'grumble', name: 'Grumblet', pos: new THREE.Vector3(-12, 17, 6), size: 1.3, seed: 71 }); a.face.set('angry'); a.drift.set(0.06, 0, 0.02); const b = mk({ id: 'rumble', name: 'Rumble', pos: new THREE.Vector3(12, 17, 4), size: 1.2, seed: 73 }); b.face.set('neutral'); b.drift.set(-0.06, 0, 0.03); const c = mk({ id: 'nimbus', name: 'Mr. Nimbus', pos: new THREE.Vector3(-18, 16, -4), size: 1.2, seed: 75 }); c.drift.set(0.05, 0, 0);
     // three caged baby clouds near the rods
     [[-5, 11, this.rodA], [-9, 8.4, this.rodB], [11, 8.4, this.rodC]].forEach(([x, y, rod], i) => { const bc = mk({ id: 'baby' + i, name: 'Baby cloud', pos: new THREE.Vector3(x, y + (i ? 0 : 0), i === 0 ? 11 : i === 1 ? -8 : -7), size: 0.55, seed: 80 + i }); bc.fixed = true; bc.face.set('sad'); bc.rod = rod; this.babies.push(bc); });
   }
