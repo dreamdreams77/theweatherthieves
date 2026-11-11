@@ -106,6 +106,15 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   check('world restored (saturation + state)', await ev(() => __game.restore > 0.95 && __game.narr.flags.freed && __game.state === 'play'));
   await shot(page, OUT + 'play-07-finale-end-card.png');
   await page.click('#endClose'); await sleep(300); await shot(page, OUT + 'play-08-restored-world.png');
+  // ---- 9. continue to Chapter 2 with the real button, then reload and Continue from saved progress
+  await page.evaluate(() => { document.getElementById('end').classList.remove('hidden'); }); await page.click('#endNext');
+  await page.waitForFunction(() => __game.chapterNo === 2 && !document.getElementById('chapterCard').classList.contains('show'), null, { timeout: 60000 });
+  check('Next chapter button loads Chapter 2 (The Village of Umbrellas)', await ev(() => __game.chapterNo === 2 && !!__game.world.pads && __game.player.pos.y > -5), await ev(() => document.querySelector('.obj-h').textContent));
+  await sleep(500); await flush(); await shot(page, OUT + 'play-09-chapter2-start.png');
+  await page.reload(); await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 120000 }); await sleep(300);
+  const label = await ev(() => document.getElementById('begin').textContent); await page.click('#begin');
+  await page.waitForFunction(() => __game.chapterNo === 2 && !document.getElementById('chapterCard').classList.contains('show'), null, { timeout: 60000 });
+  check('after a reload, Continue resumes at Chapter 2 from the save', await ev(() => __game.chapterNo === 2), 'button said: ' + label);
   check('no console errors during whole playthrough', logs.length === 0, logs.slice(0, 3).join(' | '));
   const bad = results.filter((r) => !r.ok); console.log(bad.length ? 'RESULT: ' + bad.length + ' FAILED' : 'RESULT: ALL ' + results.length + ' CHECKS PASSED');
   await browser.close(); process.exit(bad.length ? 1 : 0);

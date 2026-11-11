@@ -69,7 +69,7 @@ export class Cloud {
     const want = this.rainOn && this.moisture > 0.01 ? (this.rainTarget ?? 1) : 0;
     this.raining = damp(this.raining, want, 5, dt);
     this.density = 1 / (s * s); // compress = heavier downpour
-    if (this.raining > 0.02) this.moisture = Math.max(0, this.moisture - dt * 0.07 * this.density * (this.personal ? 0.25 : 1) * (this.precip === 'snow' ? 0.5 : 1));
+    if (this.raining > 0.02) this.moisture = Math.max(0, this.moisture - dt * 0.07 * this.density * (this.personal ? (this.held ? 0.25 : 0) : 1) * (this.precip === 'snow' ? 0.5 : 1));
     else this.moisture = Math.min(1, this.moisture + dt * (0.03 + (refill ? refill(this.pos) : 0)));
     this.dark = damp(this.dark, 1 - this.moisture * 0.0 - (this.moisture > 0.3 ? 0.5 : 0), 2, dt) * 0 + (1 - this.moisture) * 0; // reserved
     // colour: heavier = greyer, stormy when held & raining

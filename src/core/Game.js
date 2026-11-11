@@ -112,8 +112,10 @@ export class Game {
   interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
   begin(newGame) {
     this.audio.start(); this.audio.setMuted(this.audio.muted);
-    if (newGame) { this.narr.reset(); location.reload(); return; }
+    if (newGame) { this.narr.reset(); Progress.reset(); location.reload(); return; }
     document.body.classList.remove('on-title'); document.getElementById('title').classList.add('gone'); setTimeout(() => document.getElementById('title').remove(), 1400);
+    const resume = Math.min(4, Progress.data.chapter || 1);
+    if (resume > 1 && CHAPTERS[resume]) { this.state = 'play'; this.loadChapter(resume); return; }
     const f = this.narr.flags;
     if (!f.intro) { f.intro = true; this.state = 'play'; this.dialogue(S.INTRO, { onEnd: () => { this.ui.setTool(0); this.ui.toast('Tip: press 1, then click the little cloud above Fen to carry it.', 8000); this.narr.save(); } }); }
     else { this.state = 'play'; this.player.locked = false; }
