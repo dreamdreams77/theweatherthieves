@@ -58,7 +58,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await shot(page, OUT + 'play-03-meadow.png');
   }
   // ---- 4. puzzle 2: move Gertrude, aim mirror, melt ice
-  await flush(); await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); for (let i = 0; i < 5 && (await S()).held !== 'gertrude'; i++) { await flush(); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(350); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); }
+  await flush(); await press('Digit1'); const gp = () => ev(() => __game.world.gertrude.pos.toArray()); for (let i = 0; i < 5 && (await S()).held !== 'gertrude'; i++) { await flush(); c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(350); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400); if (process.env.DBG) console.log('dbg', JSON.stringify(await ev(() => { const g = __game, a = g.tools.aim; return { type: a.hitType, hit: a.hit?.id || a.hit?.name, held: g.tools.held?.id, tool: g.tools.tool, state: g.state, locked: g.player.locked, dlg: g.ui.dlg.active, ptr: g.input.pointer.toArray(), clouds: g.weather.clouds.map((c) => c.id + ':' + c.pos.toArray().map((x) => x.toFixed(1)).join(',')) }; })), JSON.stringify(c)); }
   check('Gertrude grabbed', (await S()).held === 'gertrude'); await flush();
   const away = await ground(-36, -10); c = await faceCamera(away); await page.mouse.move(c.x, c.y, { steps: 6 }); await sleep(3500);
   c = await faceCamera(await gp()); await page.mouse.move(c.x, c.y); await sleep(150); await page.mouse.down(); await sleep(60); await page.mouse.up(); await sleep(400);
