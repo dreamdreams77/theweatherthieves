@@ -101,7 +101,7 @@ export class SunkenSky extends ChapterBase {
   buildMeadow() {
     const { B, scene, terrain, weather, q } = this; const r = rng(66); const avoid = [[-31, -18, 3], [-29.8, -26.5, 4.5], [-37, -21, 3.5], [-24.5, -14.4, 3]];
     this.mirror = new SunMirror(scene, new THREE.Vector3(-31, this.on(B, -31, -18), -18), weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = 1.25; terrain.addCollider({ x: -31, z: -18, r: 1.1 });
-    this.mirror.yawG.rotation.y = this.mirror.yaw; this.updaters.push((dt, t) => this.mirror.update(dt, t, this.sunDir, this.mirrorActive !== false));
+    this.mirror.yawG.rotation.y = this.mirror.yaw; this.mirrors = [this.mirror]; this.updaters.push((dt, t) => this.mirror.update(dt, t, this.sunDir, this.mirrorActive !== false));
     this.gate = new SunGate(new THREE.Vector3(-29.8, this.on(B, -29.8, -27.5), -27.5), 2.65, terrain); scene.add(this.gate.group); this.updaters.push((dt, t) => this.gate.update(dt, t));
     const gx = -29.8 + Math.sin(2.65) * -2.4, gz = -27.5 + Math.cos(2.65) * -2.4;
     this.ice = new IceBlock(new THREE.Vector3(gx + 0.2, this.on(B, gx, gz), gz), 1.15); scene.add(this.ice.group); this.ice.pos.set(gx, this.on(B, gx, gz) + 1.4, gz); weather.register(this.ice); terrain.addCollider({ x: gx, z: gz, r: 1.6 }); this.iceCollider = terrain.colliders[terrain.colliders.length - 1];
