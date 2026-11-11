@@ -64,7 +64,7 @@ export class Game {
       const sp = this.world.spawn; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
       this.world.fenCloud && (this.world.fenCloud.owner = this.companion);
       this.rig.snap(this.player.pos); this.ui.setGlints(0); this.ui.setTool(0); this.ui.refreshMemories?.(); this.ui.showEnd && document.getElementById('end').classList.add('hidden');
-      this.ui.setObjective(C.title, ''); this.state = 'play'; this.shot(null);
+      this.ui.setChapterLabel(n, C.title); this.ui.setObjective(C.title, ''); this.state = 'play'; this.shot(null);
       setTimeout(() => { ov?.classList.remove('show'); this.narr.begin?.(); }, 1800);
     }, 900);
   }
