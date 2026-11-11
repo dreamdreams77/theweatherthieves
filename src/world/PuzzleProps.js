@@ -213,5 +213,11 @@ export class Lift {
     this.frame = mesh(tp.merge(), vcMat({ roughness: 0.9 })); this.frame.position.copy(pos); this.frame.position.y = pos.y;
     this.ropes = [];
   }
-  update(dt, charge) { const target = this.y0 + (this.y1 - this.y0) * clamp(charge, 0, 1); this.group.position.y = damp(this.group.position.y, target, 3, dt); this.level = (this.group.position.y - this.y0) / (this.y1 - this.y0); }
+  /** ready: windmill fully charged; riding: someone is standing on the platform. Rises only with a passenger. */
+  update(dt, ready, riding, charge = 0) {
+    const g = this.group.position; let y = g.y;
+    if (ready && riding) y = Math.min(this.y1, y + 3.2 * dt);
+    else if (!riding) y = Math.max(this.y0 + (ready ? 0 : charge * 0.35), y - 4 * dt);
+    g.y = y; this.level = (y - this.y0) / (this.y1 - this.y0);
+  }
 }

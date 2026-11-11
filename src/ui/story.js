@@ -47,7 +47,7 @@ export const PLATES_BOTH = [
   { who: 'juno', ex: 'smug', text: 'Frost (5) will freeze them in place. Then wind away!' },
 ];
 export const LIFT = [
-  { who: 'juno', ex: 'excited', anim: 'cheer', text: 'The lift is rising! All aboard!' },
+  { who: 'juno', ex: 'excited', anim: 'cheer', text: 'The mill is fully charged — the lift is ready! Everybody step aboard!' },
   { who: 'fen', ex: 'cringe', anim: 'shake', text: 'I would like to register an objection. Loudly. From the ground.' },
 ];
 export const SUMMIT = [

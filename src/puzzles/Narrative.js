@@ -67,7 +67,7 @@ export class Narrative {
     const g = this.game, w = g.world, f = this.flags; Object.assign(f, d.f); f.freed = !!d.f.freed;
     if (f.p1) { w.blooms.forEach((b) => { b.water = 1; b.bloomed = true; b.bloom = 1; }); w.bridge1.group.visible = true; w.bridge1.surface.enabled = true; w.bridgeGrow.on = false; w.bridgeGrow.t = 1; g.setRestore(0.2, true); }
     if (f.melted) { w.ice.melt = 1; w.ice.frozen = false; w.gate.setOpen(1); w.gate.open = 1; w.iceCollider.enabled = false; g.setRestore(0.5, true); }
-    if (f.p3) { w.windmill.charge = 1; w.windmill.braked = false; w.liftCharge = 1; w.lift.group.position.y = w.lift.y1; }
+    if (f.p3) { w.windmill.charge = 1; w.windmill.braked = false; w.liftCharge = 1; }
     if (f.freed) { this.finishInstant(); }
     for (const id of d.g || []) { const gl = w.glints.find((x) => x.id === id); if (gl) { gl.got = true; gl.group.visible = false; this.glints.add(id); } }
     g.ui.setGlints(this.glints.size);

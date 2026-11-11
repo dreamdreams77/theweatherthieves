@@ -153,7 +153,7 @@ export class SunkenSky {
       for (const c of this.crates) { if (c.frozen > 0.5) continue; for (const p of this.plates) { const dx = p.pos.x - c.pos.x, dz = p.pos.z - c.pos.z, d = Math.hypot(dx, dz); if (d < 1.7 && d > 0.05 && Math.hypot(c.vel.x, c.vel.z) < 2.2) { c.vel.x += (dx / d) * dt * 6; c.vel.z += (dz / d) * dt * 6; } } } });
     this.lift = new Lift(new THREE.Vector3(-4.5, this.on(C, -4.5, -60), -60), this.D.y + 0.35, terrain); scene.add(this.lift.group, this.lift.frame); terrain.addSurface(this.lift.surface);
     // lift colliders (frame posts) kept away from the platform footprint
-    this.updaters.push((dt) => this.lift.update(dt, this.liftCharge ?? 0));
+    this.updaters.push((dt) => { const p = this.game.player, L = this.lift; const riding = Math.hypot(p.pos.x - L.pos.x, p.pos.z - L.pos.z) < 2.3 && p.pos.y > L.group.position.y - 0.6 && p.pos.y < L.group.position.y + 1.5; L.update(dt, (this.liftCharge ?? 0) >= 0.995, riding, this.liftCharge ?? 0); });
     const fl = Props.laundryLine(new THREE.Vector3(-22, this.on(C, -22, -52, 3.2), -52), new THREE.Vector3(-22, this.on(C, -22, -58, 3.6), -58), 5); scene.add(fl);
     for (const [x, z] of [[-22, -52], [-22, -58]]) { const pole = mesh(new THREE.CylinderGeometry(0.06, 0.08, 4, 6), std({ color: 0x7a5a42 })); pole.position.set(x, this.on(C, x, z, 1.9), z); scene.add(pole); }
     // kites / flags on poles
