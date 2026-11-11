@@ -78,7 +78,7 @@ export class Cloud {
   updateRain(dt, terrain, wind, spawnSplash) {
     const act = this.raining > 0.02; const rad = this.footprint * 0.95;
     if (!act && this.rainMesh.count === 0) return;
-    const n = Math.floor(this.N * clamp(this.raining, 0, 1) * clamp(this.density, 0.4, 1.8) * 0.7);
+    const n = Math.min(this.N, Math.floor(this.N * clamp(this.raining, 0, 1) * clamp(this.density, 0.4, 1.8) * 0.7));
     const bottom = this.pos.y - 0.5 * (1 / Math.sqrt(this.stretch));
     const D = this.drops, m = this._m, q = this._q, sc = this._s; let c = 0;
     this.rainMesh.count = Math.max(n, 0);
