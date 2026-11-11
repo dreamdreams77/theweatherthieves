@@ -150,13 +150,13 @@ export class FactoryNarr extends ChapterNarr {
     if (this.discoT > 0) { this.discoT -= dt; if (Math.random() < dt * 5) g.weather.bolt(new THREE.Vector3(p.pos.x + (Math.random() - 0.5) * 24, 22, p.pos.z + (Math.random() - 0.5) * 24), new THREE.Vector3(p.pos.x + (Math.random() - 0.5) * 24, 0, p.pos.z + (Math.random() - 0.5) * 24), [0xff90ff, 0x90ffff, 0xffe070][(Math.random() * 3) | 0]); }
     // rainbow = mirror beam passing through a rain column near the jar
     let rb = false; if (f.revealed && !f.freed) for (const b of g.weather.beams) { if (b.power < 0.5) continue; for (const c of g.weather.clouds) { if (c.raining < 0.5 || c.precip === 'snow') continue; { const tt = clamp(new THREE.Vector3().subVectors(c.pos, b.o).dot(b.d), 0, b.len), pt = b.o.clone().addScaledVector(b.d, tt); if (pt.y < c.pos.y && pt.y > c.pos.y - 14 && Math.hypot(pt.x - c.pos.x, pt.z - c.pos.z) < c.footprint) { rb = true; } } if (rb) break; } if (rb) break; }
-    if (rb) { this.rbT += dt; if (this.rbT > 2.2) this.finale(); } else this.rbT = Math.max(0, this.rbT - dt * 0.5); f.rainbow = Math.min(1, this.rbT / 2.2);
+    if (rb) { this.rbT += dt; if (this.rbT > 2.2) this.finishGame(); } else this.rbT = Math.max(0, this.rbT - dt * 0.5); f.rainbow = Math.min(1, this.rbT / 2.2);
     if (f.revealed && !f.freed && !this.coaxed) { this.coaxed = true; g.ui.toast('Wren holds the jar still. Make sunshine and rain meet: mirror (Sun 4) + a raining cloud (Rain 2).', 8000); }
     const st = f.latched < 3 ? 'rods' : !f.revealed ? 'door' : !f.freed ? 'jar' : 'done'; if (st !== this.step) { this.step = st; this.hintT = 0; }
     const OBJ = { rods: 'Charge the three copper rods with a squashed storm cloud', door: 'The Engine Door is open — go inside', jar: 'Sunshine and rain at once: make a rainbow over the Great Jar', done: 'The weather is home!' };
     g.ui.setObjective(OBJ[st], st === 'rods' ? `${f.latched} / 3 rods · baby clouds freed: ${f.babies} / 3` : st === 'jar' ? `Rainbow ${(f.rainbow * 100) | 0}%` : '');
   }
-  finale() {
+  finishGame() {
     const g = this.game, w = g.world, f = this.flags; if (f.freed) return; f.freed = true; w.jarOpen = true; w.lid.userData.v = 10; g.setRestore(1); g.palette = { fogA: 0xb8c8e8, fogB: 0xffe0c0, tint: 0x888888, tintAmt: 0, density: [0.006, 0.005] }; g.applyMood(); g.audio.sfx('finale'); g.shake(0.5); g.weather.burst(w.jarPos.clone().add(new THREE.Vector3(0, 4, 0)), 0xffffff, 120, 10, 2.4); g.weather.ambient = 'snow';
     for (let i = 0; i < 5; i++) setTimeout(() => g.weather.bolt(new THREE.Vector3(w.jarPos.x + (Math.random() - 0.5) * 10, 24, w.jarPos.z - 4), new THREE.Vector3(w.jarPos.x + (Math.random() - 0.5) * 10, 3, w.jarPos.z - 4), 0xfff0a0), i * 400); this.memory('c4e');
     g.shot({ pos: w.jarPos.clone().add(new THREE.Vector3(-11, 7, 12)), look: w.jarPos.clone().add(new THREE.Vector3(0, 5, 0)) }, 30);
