@@ -39,11 +39,12 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   // walk toward the blooms with the stick
   const walkTo = async (x, z) => { const t0 = Date.now(); const sid = await down(stick.x, stick.y); while (Date.now() - t0 < 12000) { const st = await S(); const dx = x - st.p[0], dz = z - st.p[2], dd = Math.hypot(dx, dz); if (dd < 3.2) break; const fx = -Math.sin(st.yaw), fz = -Math.cos(st.yaw), rx = Math.cos(st.yaw), rz = -Math.sin(st.yaw); const f = (dx * fx + dz * fz) / dd, r = (dx * rx + dz * rz) / dd; await move(sid, stick.x + r * 50, stick.y - f * 50); await sleep(80); } await up(sid); };
   await walkTo(bloom[0], bloom[2]);
+  { const hp2 = await holdSel('#bPlus'); await sleep(1500); await up(hp2); } // undo the squash from the − test so the rain column is a sensible size
   // aim the screen-centre reticle at the bloom: walk with the stick along the aim error (camera-relative), like a player nudging into place
-  for (let i = 0; i < 40; i++) { const info = await page.evaluate((b) => { const g = __game, p = g.player.pos, a = g.tools.aim.point; return { ex: b[0] - a.x, ez: b[2] - a.z, d: Math.hypot(b[0] - a.x, b[2] - a.z), yaw: g.rig.yaw }; }, bloom); if (info.d < 0.9) break;
+  for (let i = 0; i < 40; i++) { const info = await page.evaluate((b) => { const g = __game, p = g.player.pos, a = g.tools.aim.point; return { ex: b[0] - a.x, ez: b[2] - a.z, d: Math.hypot(b[0] - a.x, b[2] - a.z), yaw: g.rig.yaw }; }, bloom); if (info.d < 0.45) break;
     const sid = await down(stick.x, stick.y); const fx = -Math.sin(info.yaw), fz = -Math.cos(info.yaw), rx = Math.cos(info.yaw), rz = -Math.sin(info.yaw); const f = (info.ex * fx + info.ez * fz) / info.d, r = (info.ex * rx + info.ez * rz) / info.d; await move(sid, stick.x + r * 50, stick.y - f * 50); await sleep(Math.min(300, 60 + info.d * 70)); await up(sid); await sleep(250); }
   const aimD = await page.evaluate((b) => Math.hypot(__game.tools.aim.point.x - b[0], __game.tools.aim.point.z - b[2]), bloom);
-  const useId = await holdSel('#bUse'); const side = await down(560, 150); await move(side, 540, 150); await sleep(300); const rainS = await S(); // two fingers at once: USE + camera drag
+  const useId = await holdSel('#bUse'); const side = await down(560, 150); await move(side, 548, 150); await sleep(300); const rainS = await S(); // two fingers at once: USE + camera drag
   await sleep(5000); const w = await page.evaluate(() => ({ water: __game.world.blooms.map((b) => +b.water.toFixed(2)), rain: __game.world.fenCloud.raining, held: __game.tools.held?.id, moist: __game.world.fenCloud.moisture })); await shot(page, 'docs/screenshots/mobile-02-use-rain.png'); await up(side); await up(useId); await sleep(300);
   check('USE (held, multi-touch with camera finger) makes held cloud rain', w.rain > 0.3, JSON.stringify(w) + ' aimErr=' + aimD.toFixed(2));
   check('rain from touch controls waters a Lanternbloom', Math.max(...w.water) > 0.1, JSON.stringify(w.water));
