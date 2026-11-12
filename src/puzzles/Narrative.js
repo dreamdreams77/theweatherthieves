@@ -12,6 +12,7 @@ class Rainbow {
     bands.forEach((c, i) => { const m = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }); const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 0.28, 0.16, 6, 56, Math.PI), m); this.group.add(t); this.mats.push(m); });
     this.group.visible = false; scene.add(this.group); this.k = 0; this.target = 0;
   }
+  hintFor() { return S.HINTS[this.step]; }
   update(dt) { this.k = damp(this.k, this.target, 1.5, dt); this.group.visible = this.k > 0.01; this.mats.forEach((m) => (m.opacity = this.k * 0.5)); }
 }
 

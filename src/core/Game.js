@@ -18,6 +18,8 @@ import * as S from '../ui/story.js';
 import { Progress } from './Progress.js';
 import { Settings } from './Settings.js';
 import { Combos } from './Combos.js';
+import { Post } from '../gfx/Post.js';
+import { Trials, TRIALS } from './Trials.js';
 import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
 
@@ -42,13 +44,13 @@ export class Game {
   }
   /** swap the studio environment for the Poly Haven sunrise sky once assets have loaded */
   useAssets() { if (Assets.env) { this.scene.environment = this.pmrem.fromEquirectangular(Assets.env).texture; } }
-  resize() { const w = innerWidth, h = innerHeight; this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w / h < 0.8 ? 62 : 52; this.camera.updateProjectionMatrix(); this.rig.fov = this.camera.fov; }
+  resize() { const w = innerWidth, h = innerHeight; this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w / h < 0.8 ? 62 : 52; this.camera.updateProjectionMatrix(); this.rig.fov = this.camera.fov;  this.post?.setSize(w, h, this.dpr); }
   build(progress) {
     Progress.load(); const before0 = new Set(this.scene.children);
     this.world = new SunkenSky(this); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
-    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
-    this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = [...this.weather.reactives]; this.ui.setTool(0);
+    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
+    this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = [...this.weather.reactives]; this.trials.setup(); this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());
     // resume position
@@ -67,7 +69,7 @@ export class Game {
       this.palette = { fogA: 0xb9b0c4, fogB: 0xf2d6bc, tint: 0x888888, tintAmt: 0, density: [0.0078, 0.0058], ...C.palette };
       if (n !== 1) this.setRestore(C.restore ?? 0.35, true); this.weather.ambient = C.ambient || null; this.audio.setChapter?.(n);
       const sp = this.world.spawn; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
-      this.world.fenCloud && (this.world.fenCloud.owner = this.companion);
+      this.world.fenCloud && (this.world.fenCloud.owner = this.companion); this.trials.setup();
       this.rig.snap(this.player.pos); this.ui.setGlints(0); this.ui.setTool(0); this.ui.refreshMemories?.(); this.ui.showEnd && document.getElementById('end').classList.add('hidden');
       this.ui.setChapterLabel(n, C.title); this.ui.setObjective(C.title, ''); this.state = 'play'; this.shot(null);
       setTimeout(() => { ov?.classList.remove('show'); this.narr.begin?.(); }, 1800);
@@ -88,7 +90,7 @@ export class Game {
   }
   shot(s, dur = 4) { this.rig.setShot(s); this.shotT = s ? dur : 0; }
   shake(a) { if (!Settings.data.reduceMotion) this.rig.shake = a; }
-  applySettings() { const s = Settings.data; this.audio.setVolume(s.volume); this.audio.setMusic(s.music); document.body.classList.toggle('big-text', !!s.bigText); document.body.classList.toggle('reduce-motion', !!s.reduceMotion); this.rig.invertY = !!s.invertY; }
+  applySettings() { const s = Settings.data; this.setPost(s.fx ?? !this.quality.mobile); this.audio.setVolume(s.volume); this.audio.setMusic(s.music); document.body.classList.toggle('big-text', !!s.bigText); document.body.classList.toggle('reduce-motion', !!s.reduceMotion); this.rig.invertY = !!s.invertY; }
   pause(on) { if (on === this.paused) return; this.paused = on; this.ui.showPause(on); }
   entityOf(who) { const npc = (this.world.npcs || []).find((n) => n.id === who); if (npc) return { pos: npc.pos, yaw: npc.yaw, head: 1.45 * npc.k * (npc.spec.tall ?? 1), face: npc.face, c: npc, rig: npc }; if (who === 'juno') return { pos: this.player.pos, yaw: this.player.yaw, head: 1.35, face: this.player.juno.face, c: this.player, rig: this.player.juno }; if (who === 'fen') return { pos: this.companion.pos, yaw: this.companion.yaw, head: 2.1, face: this.companion.fen.face, c: this.companion, rig: this.companion.fen }; if (who === 'sunny' && this.world.sunny) return { pos: this.world.sunny.group.getWorldPosition(new THREE.Vector3()), yaw: Math.PI * 0.2, head: 0, face: this.world.sunny.face, c: null, rig: null }; return null; }
   /** play dialogue with cinematic speaker framing. opts: {noLock, shot=true, onEnd} */
@@ -112,11 +114,17 @@ export class Game {
     });
   }
   talkEnd() { const e = this.speaker; if (e) { e.face.talk = 0; if (e.c && e.c.talk !== undefined) e.c.talk = 0; } this.player.talk = 0; this.companion.talk = 0; if (this.world.sunny) if (this.world.sunny) this.world.sunny.face.talk = 0; }
+  /** in-character hint for the current objective */
+  askFen() {
+    if (this.state !== 'play') return; const n = this.narr, txt = this.trials.active ? 'Finish the trial first — the floating icons tell you which weather each target wants.' : (n.hintFor?.() ?? n.hints?.[n.step]);
+    const lead = ['Fine. Since you asked nicely.', 'Ahem. A hint, from a cloud of great wisdom:', 'Sigh. Very well.', 'If I must.'][(Math.random() * 4) | 0];
+    this.say.fen(txt ? `${lead} ${txt}` : 'I have no idea either. Explore. Wander. Get rained on. It builds character.', 6500); this.companion.fen.play?.('shrug'); if (n.hintT !== undefined) n.hintT = -60; this.audio.sfx?.('tool');
+  }
   talkNPC(npc) {
     if (this.state !== 'play') return; if (Math.hypot(npc.pos.x - this.player.pos.x, npc.pos.z - this.player.pos.z) > 9) { this.say.juno('Let me get closer first!'); return; }
     const lines = this.narr.npcLines?.(npc); if (!lines || !lines.length) return; npc.react = 6; this.dialogue(lines, { shot: true, onEnd: () => (npc.react = 0) });
   }
-  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
+  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; if (this.trials.interact()) return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
   begin(newGame) {
     this.audio.start(); this.audio.setMuted(this.audio.muted);
     if (newGame) { this.narr.reset(); Progress.reset(); location.reload(); return; }
@@ -146,7 +154,7 @@ export class Game {
     this.player.update(dt, t, input, this.rig.yaw);
     this.companion.update(dt, t, this.player);
     const env = this.cloudEnv(); this.weather.clouds.forEach((c) => c.update(dt, t, env));
-    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.reactToWeather(dt);
+    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.trials.update(dt, t); this.reactToWeather(dt);
     // camera
     if (this.state === 'dialogue' || this.cinematic) { input.orbit.set(0, 0); }
     this.rig.update(dt, this.player.pos, input, this.player.vel, this.terrain); this.camera.updateMatrixWorld();
@@ -181,16 +189,18 @@ export class Game {
     const p = this.player, w = p.weatherW; if (this.narr.cd('junoWind', 25) && w.wind.length() > 8 && this.state === 'play' && false) this.say.juno('Whoa!');
   }
   /** QA helper: force one render (used with ?norender=1 for real-time headless tests) */
-  renderOnce() { this.renderer.render(this.scene, this.camera); }
+  draw() { if (this.post) this.post.render(); else this.renderer.render(this.scene, this.camera); }
+  setPost(on) { if (on && !this.post) { this.post = new Post(this.renderer, this.scene, this.camera); this.post.setSize(innerWidth, innerHeight, this.dpr); } else if (!on) this.post = null; }
+  renderOnce() { this.draw(); }
   /** QA helper: advance the simulation without rendering */
   sim(sec, dt = 1 / 30) { for (let t = 0; t < sec; t += dt) { this.update(dt); this.input.endFrame(); } }
   frame(dtReal) {
     const dt = Math.min(dtReal, 0.05);
     if (!this.paused) this.update(dt); else this.input.endFrame();
-    if (!this.noRender) this.renderer.render(this.scene, this.camera);
+    if (!this.noRender) this.draw();
     this.input.endFrame();
     // adaptive resolution
     this._acc = (this._acc || 0) + dtReal; this._n = (this._n || 0) + 1;
-    if (this._acc > 1.2) { const fps = this._n / this._acc; this._acc = 0; this._n = 0; this.fps = fps; if (fps < 38 && this.dpr > 0.8) { this.dpr = Math.max(0.8, this.dpr - 0.2); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); } else if (fps > 58 && this.dpr < this.quality.dpr) { this.dpr = Math.min(this.quality.dpr, this.dpr + 0.1); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); } }
+    if (this._acc > 1.2) { const fps = this._n / this._acc; this._acc = 0; this._n = 0; this.fps = fps; if (fps < 38 && this.dpr > 0.8) { this.dpr = Math.max(0.8, this.dpr - 0.2); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } else if (fps > 58 && this.dpr < this.quality.dpr) { this.dpr = Math.min(this.quality.dpr, this.dpr + 0.1); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } }
   }
 }
