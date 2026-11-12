@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { TOOLS } from '../core/Tools.js';
 import { clamp } from '../core/Utils.js';
 import { Progress } from '../core/Progress.js';
+import { Settings } from '../core/Settings.js';
 import { MEMORY_DB, drawMemory } from './memories.js';
+import { ALMANAC } from '../core/Combos.js';
 import { CHAPTERS } from '../chapters/index.js';
 
 const ICON = {
@@ -22,7 +24,7 @@ export class UI {
     this.game = game; this.root = document.getElementById('ui'); this.barks = []; this.toastT = 0; this.hoverEl = null;
     this.root.innerHTML = `
       <div id="obj" class="panel"><div class="obj-h">Chapter 1 · The Sunken Sky</div><div id="objText">&nbsp;</div><div id="objSub"></div></div>
-      <div id="top-r"><div id="glints" class="pill" title="Sky Glints found"><span class="gem"></span><b id="glintN">0</b>/5</div><button id="mute" class="pill" aria-label="Toggle sound">♪</button><button id="memBtn" class="pill" aria-label="Memories">Memories</button><button id="helpBtn" class="pill" aria-label="Help">?</button></div>
+      <div id="top-r"><div id="glints" class="pill" title="Sky Glints found"><span class="gem"></span><b id="glintN">0</b>/5</div><button id="mute" class="pill" aria-label="Toggle sound">♪</button><button id="memBtn" class="pill" aria-label="Memories">Memories</button><button id="pauseBtn" class="pill" aria-label="Pause and settings">❚❚</button><button id="helpBtn" class="pill" aria-label="Help">?</button></div>
       <div id="toast" class="toast"></div>
       <div id="hover" class="hover"></div>
       <div id="barks"></div>
@@ -38,8 +40,18 @@ export class UI {
         <li><b>4 Sun</b> hold to bounce sunlight from a mirror · <b>5 Frost</b> hold to freeze</li>
         <li><b>F</b> talk / use · <b>Esc</b> close this</li></ul><button id="helpClose" class="btn">Back to the sky</button></div></div>
       <div id="end" class="overlay hidden"><div class="card end"><div class="eyebrow">Chapter 1 complete</div><h1>The Sunken Sky is saved</h1><p>Sunny is free — and four more jars are waiting.<br>Rain's village, Snow's forest and Thunder's factory still need their weather back.</p><p class="sm" id="endStats"></p><button id="endNext" class="btn">Next chapter</button> <button id="endClose" class="btn alt">Keep exploring</button></div></div>
+      <div id="pause" class="overlay hidden"><div class="card wide pausecard"><h2>Paused</h2>
+        <div class="prow"><button id="pResume" class="btn">Resume</button><button id="pRestart" class="btn alt">Restart chapter</button><button id="pHelp" class="btn alt">Controls</button></div>
+        <h3>Chapters</h3><div id="pChapters" class="prow"></div>
+        <h3>Settings</h3>
+        <label class="set">Sound volume <input id="sVol" type="range" min="0" max="1" step="0.05"></label>
+        <label class="set">Music <input id="sMusic" type="range" min="0" max="1" step="0.05"></label>
+        <label class="set"><input id="sMotion" type="checkbox"> Reduce motion (no camera shake or flashes)</label>
+        <label class="set"><input id="sText" type="checkbox"> Larger text</label>
+        <label class="set"><input id="sInvert" type="checkbox"> Invert camera up/down</label>
+      </div></div>
       <div id="chapterCard"><div class="cc-no"></div><div class="cc-t"></div></div>
-      <div id="album" class="overlay hidden"><div class="card wide"><h2>Weather memories</h2><div id="albumGrid"></div><button id="albumClose" class="btn">Close</button></div></div>
+      <div id="album" class="overlay hidden"><div class="card wide"><h2>Weather memories</h2><div id="albumGrid"></div><h2>Weather almanac</h2><div id="almanac"></div><button id="albumClose" class="btn">Close</button></div></div>
       <div id="touch" class="hidden">
         <div id="stick"><i id="knob"></i></div>
         <div id="tbtns"><button id="bUse" class="tb big">USE</button><button id="bJump" class="tb">Jump</button><button id="bMinus" class="tb sm">−</button><button id="bPlus" class="tb sm">+</button><button id="bTalk" class="tb sm">Talk</button></div>
@@ -50,6 +62,12 @@ export class UI {
     this.q('#helpBtn').addEventListener('click', () => this.q('#help').classList.remove('hidden')); this.q('#helpClose').addEventListener('click', () => this.q('#help').classList.add('hidden'));
     this.q('#endClose').addEventListener('click', () => this.q('#end').classList.add('hidden'));
     this.q('#endNext').addEventListener('click', () => { this.q('#end').classList.add('hidden'); game.loadChapter(game.chapterNo + 1); });
+    this.q('#pauseBtn').addEventListener('click', () => game.pause(!game.paused)); this.q('#pResume').addEventListener('click', () => game.pause(false));
+    this.q('#pHelp').addEventListener('click', () => { this.q('#help').classList.remove('hidden'); });
+    this.q('#pRestart').addEventListener('click', () => { if (!confirm('Restart this chapter from the beginning?')) return; Progress.data.flags['ch' + game.chapterNo] = null; if (game.chapterNo === 1) { try { localStorage.removeItem('weather-thieves-save-v1'); } catch {} } Progress.save(); game.pause(false); game.loadChapter(game.chapterNo); });
+    const S = Settings.data, bind = (id, key, ev = 'input', get = (el) => +el.value) => { const el = this.q(id); if (el.type === 'checkbox') el.checked = !!S[key]; else el.value = S[key]; el.addEventListener(ev, () => { S[key] = el.type === 'checkbox' ? el.checked : get(el); Settings.save(); game.applySettings(); }); };
+    bind('#sVol', 'volume'); bind('#sMusic', 'music'); bind('#sMotion', 'reduceMotion', 'change'); bind('#sText', 'bigText', 'change'); bind('#sInvert', 'invertY', 'change');
+    addEventListener('keydown', (e) => { if ((e.code === 'Escape' || e.code === 'KeyP') && game.state !== 'title' && game.state !== 'loading' && this.q('#help').classList.contains('hidden') && this.q('#album').classList.contains('hidden')) { e.preventDefault(); game.pause(!game.paused); } });
     this.q('#memBtn').addEventListener('click', () => { this.refreshMemories(); this.q('#album').classList.remove('hidden'); }); this.q('#albumClose').addEventListener('click', () => this.q('#album').classList.add('hidden'));
     this.dlg = { lines: [], i: 0, typing: false, text: '', pos: 0, onEnd: null, onLine: null, active: false };
     const adv = () => this.advance(); this.q('#dlg').addEventListener('pointerdown', (e) => { e.stopPropagation(); adv(); });
@@ -79,7 +97,7 @@ export class UI {
   setGlints(n) { this.q('#glintN').textContent = n; }
   setHover(type, obj) { const el = this.q('#hover'); let txt = ''; if (type === 'npc') txt = obj.name + ' (click / F to talk)'; if (type === 'cloud') txt = obj.name; else if (type === 'mirror') txt = 'Sun mirror'; else if (type === 'puffkin') txt = 'Puffkin'; else if (type === 'fen') txt = 'Fen (press F to chat)'; else if (type === 'jar') txt = 'The Glass Jar'; else if (type === 'glint') txt = 'Sky Glint'; el.textContent = txt; el.classList.toggle('show', !!txt && this.game.state === 'play'); if (txt) { const p = this.game.input.touchMode ? { x: innerWidth / 2, y: innerHeight * 0.46 } : this.game.input.pointerPx; el.style.transform = `translate(${p.x + 16}px,${p.y + 16}px)`; } }
   toast(text, ms = 4200) { const t = this.q('#toast'); t.textContent = text; t.classList.add('show'); clearTimeout(this._tt); this._tt = setTimeout(() => t.classList.remove('show'), ms); }
-  flash() { const f = this.q('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+  flash() { if (Settings.data.reduceMotion) return; const f = this.q('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
   bark(getPos, text, ms = 2600, who = 'fen') {
     const el = document.createElement('div'); el.className = 'bark ' + who; el.textContent = text; this.q('#barks').appendChild(el);
     this.barks.push({ el, getPos, t: ms / 1000 }); if (this.barks.length > 5) { const b = this.barks.shift(); b.el.remove(); }
@@ -102,10 +120,15 @@ export class UI {
     const d = this.dlg; if (!d.active || !d.typing) return; d._t += dt * 46; const n = Math.min(d.text.length, Math.floor(d._t)); if (n !== d.pos) { if (n % 2 === 0) this.game.audio.blip(d.who); d.pos = n; this.q('#dText').textContent = d.text.slice(0, n); }
     if (d.pos >= d.text.length) { d.typing = false; this.q('#dNext').style.opacity = 1; this.game.talkEnd?.(); }
   }
+  showPause(on) {
+    this.q('#pause').classList.toggle('hidden', !on); if (!on) return; const box = this.q('#pChapters'); box.innerHTML = ''; const un = Progress.unlocked();
+    for (let n = 1; n <= 4; n++) { const b = document.createElement('button'); b.className = 'btn alt chbtn' + (n === this.game.chapterNo ? ' cur' : ''); b.textContent = n + '. ' + (CHAPTERS[n]?.title || ''); b.disabled = n > un; if (n > un) b.title = 'Locked — finish the chapter before it'; b.addEventListener('click', () => { this.game.pause(false); if (n !== this.game.chapterNo) this.game.loadChapter(n); }); box.appendChild(b); }
+  }
   refreshMemories() {
     const grid = this.q('#albumGrid'); grid.innerHTML = ''; const have = Progress.data.memories; const ids = Object.keys(MEMORY_DB);
     for (const id of ids) { const m = MEMORY_DB[id], div = document.createElement('div'); div.className = 'mem' + (have.includes(id) ? '' : ' locked'); const cv = document.createElement('canvas'); cv.width = 160; cv.height = 90; if (have.includes(id)) drawMemory(cv, id); div.appendChild(cv); const t = document.createElement('div'); t.className = 'mt'; t.textContent = have.includes(id) ? m.title : '???'; const x = document.createElement('div'); x.className = 'mx'; x.textContent = have.includes(id) ? m.text : 'Not found yet'; div.append(t, x); grid.appendChild(div); }
     this.q('#memBtn').textContent = 'Memories ' + have.length + '/' + ids.length;
+    const al = this.q('#almanac'); al.innerHTML = ''; const got = Progress.data.almanac || []; for (const [id, a] of Object.entries(ALMANAC)) { const d = document.createElement('div'); d.className = 'alm' + (got.includes(id) ? '' : ' locked'); d.innerHTML = `<b>${got.includes(id) ? a.name : '???'}</b><span>${got.includes(id) ? a.desc : 'Try: ' + a.hint}</span>`; al.appendChild(d); }
   }
   showEnd(stats, chapterDone) {
     const nxt = CHAPTERS[(this.game.chapterNo || 1) + 1]; const b = this.q('#endNext'); b.style.display = nxt ? '' : 'none'; if (nxt) b.textContent = 'Next: ' + nxt.title; if (chapterDone) { this.q('#end .eyebrow').textContent = 'Chapter ' + this.game.chapterNo + ' complete'; this.q('#end h1').textContent = this.game.chapterTitle() + ' is saved'; if (chapterDone === 4) { this.q('#end .eyebrow').textContent = 'The End'; this.q('#end h1').textContent = 'The weather is home'; this.q('#end p').innerHTML = 'Sunshine, rain, snow and thunder are back — and so is the sky’s memory.<br>Juno, Fen and Wren will look after them together.'; } } this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }

@@ -50,3 +50,9 @@ body.on-title #ui { opacity:0; pointer-events:none; } #ui { transition:opacity 1
 .btn.alt { background:linear-gradient(180deg,#e6e0f4,#c4b8e4); box-shadow:0 6px 0 #8a7cb0, 0 10px 24px #0005; font-size:15px; padding:9px 20px; }
 .card.wide { max-width:min(900px,96vw); max-height:88vh; overflow:auto; } #albumGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin:10px 0 16px; }
 .mem { background:rgba(255,255,255,.08); border-radius:12px; padding:6px; font-size:12px; } .mem canvas { width:100%; border-radius:8px; display:block; } .mem.locked canvas { background:#2a2444; height:84px; } .mem .mt { font-weight:800; font-size:13px; margin-top:4px; } .mem .mx { opacity:.8; line-height:1.15; } .mem.locked { opacity:.55; }
+
+.pausecard h3 { margin:16px 0 6px; font-size:15px; letter-spacing:.12em; text-transform:uppercase; opacity:.75; } .prow { display:flex; flex-wrap:wrap; gap:8px; } .chbtn { font-size:14px; padding:8px 14px; } .chbtn.cur { outline:3px solid var(--gold); } .chbtn[disabled] { opacity:.4; cursor:not-allowed; }
+.set { display:flex; align-items:center; gap:10px; margin:8px 0; font-size:16px; } .set input[type=range] { flex:1; max-width:260px; accent-color:var(--gold); } .set input[type=checkbox] { width:20px; height:20px; accent-color:var(--gold); }
+body.big-text #dText { font-size:25px; } body.big-text #objText { font-size:21px; } body.big-text .toast { font-size:19px; } body.big-text #barks .bark { font-size:18px; max-width:320px; } body.big-text #toolhint { font-size:18px; }
+
+#almanac { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; margin:8px 0 16px; } .alm { background:rgba(255,255,255,.08); border-radius:12px; padding:8px 10px; font-size:13px; line-height:1.25; } .alm b { display:block; font-size:15px; color:var(--gold); } .alm.locked { opacity:.6; } .alm.locked b { color:#fff; }

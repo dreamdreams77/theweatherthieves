@@ -34,7 +34,7 @@ export class LightningRod {
     const k = clamp(this.power / 30, 0, 1); this.glow.material.color.setHex(this.power > 0 ? 0xffee88 : 0x4a6aa8); this.glow.scale.setScalar(1 + k * 0.5 + Math.sin(t * 20) * 0.1 * k); this.light.intensity = k * 6; this.ring.material.opacity = 0.2 + k * 0.6;
   }
   strike(c) {
-    const g = this.game, w = g.weather; w.bolt(c.pos.clone().add(new THREE.Vector3(0, -0.6, 0)), this.tip.clone(), 0xfff6b0); w.burst(this.tip, 0xffee88, 40, 6, 1.4); g.audio.sfx('pop'); g.audio.sfx('unlock'); g.shake(0.5); c.charge = 0; this.power = 60; if (!this.latched) { this.latched = true; this.onLatch?.(this); }
+    const g = this.game, w = g.weather; w.bolt(c.pos.clone().add(new THREE.Vector3(0, -0.6, 0)), this.tip.clone(), 0xfff6b0); w.burst(this.tip, 0xffee88, 40, 6, 1.4); g.audio.sfx('pop'); g.audio.sfx('unlock'); g.shake(0.5); c.charge = 0; this.power = 60; g.combos?.discover('charge'); if (!this.latched) { this.latched = true; this.onLatch?.(this); }
   }
 }
 class Conveyor {
@@ -97,7 +97,7 @@ export class FactoryWorld extends ChapterBase {
     const brass = std({ color: 0xc6a05a, metalness: 0.9, roughness: 0.3 }); jg.add(mesh(new THREE.CylinderGeometry(2.8, 3.1, 0.5, 26), brass)); this.lid = new THREE.Group(); this.lid.position.y = 6.4; jg.add(this.lid); this.lid.add(mesh(new THREE.CylinderGeometry(1.5, 1.3, 0.7, 20), brass));
     this.orbs = []; const oc = [0xffd35a, 0x7fc8ff, 0xf0f8ff, 0xd0a8ff, 0x9fe8b8, 0xff9a6a]; for (let i = 0; i < 6; i++) { const o = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 10), new THREE.MeshBasicMaterial({ color: oc[i] })); o.userData.a = (i / 6) * TAU; jg.add(o); this.orbs.push(o); } this.jarLight = new THREE.PointLight(0xffe0a0, 2, 18, 2); this.jarLight.position.y = 3; jg.add(this.jarLight);
     terrain.addCollider({ x: jx, z: jz, r: 3.0, y0: jy - 1, y1: jy + 8, cam: { r: 2.6, y0: jy, y1: jy + 8 } });
-    this.mirror = new SunMirror(scene, new THREE.Vector3(-8, F.heightAt(-8, -19), -19), this.weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = 1.57; this.mirrors.push(this.mirror); terrain.addCollider({ x: -8, z: -19, r: 1.1 });
+    this.mirror = new SunMirror(scene, new THREE.Vector3(-8, F.heightAt(-8, -19), -19), this.weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = 1.57; this.mirrors.push(this.mirror); this.ownRainbow = false; terrain.addCollider({ x: -8, z: -19, r: 1.1 });
     this.glints.push(this.glint(7, F.heightAt(7, -18) + 1, -18, 'c4a', 'Hugged thunder')); this.glints.push(this.glint(-3, F.heightAt(-3, 4) + 1, 4, 'c4b', 'Lightning lullaby'));
   }
   cast() {
@@ -131,7 +131,13 @@ export class FactoryWorld extends ChapterBase {
 
 export class FactoryNarr extends ChapterNarr {
   constructor(game) { super(game, 4); Object.assign(this.flags, { latched: 0, door: false, rainbow: 0, babies: 0, disco: false, revealed: false, freed: false }); this.hints = { rods: 'Squash a cloud with the mouse wheel (or Q) while you carry it — it charges up, crackles and turns dark. Park it over a copper rod.', lift: 'Rod A powers the lift. Stand on the lift while it has power. Rod B powers the belt on the catwalk.', door: 'The Engine Door opens when all three rods have been struck.', jar: 'Sun (4) from the mirror through Fen’s rain makes a rainbow. Keep it overlapping for a couple of seconds.' }; this.fenIdle = ['Thunder. Loud, dramatic, and sensitive underneath. I relate.', 'This place smells like a very sad toolbox.', 'Fun fact: lightning is just the sky being too embarrassed to say it is upset.']; this.dctimer = 0; this.rbT = 0; }
-  init() { super.init(); const w = this.game.world; w.onLatch = (rod) => { this.flags.latched = w.rods.filter((r) => r.latched).length; this.game.ui.toast(`Rod ${rod.id} struck — ${this.flags.latched} / 3`); if (this.flags.latched >= 3) this.openDoor(); }; w.onBaby = () => { this.flags.babies++; if (this.flags.babies >= 3) { this.memory('c4a'); } }; this.game.ui.setGlints(0); }
+  init() { super.init(); this.applySaved(); const w = this.game.world; w.onLatch = (rod) => { this.flags.latched = w.rods.filter((r) => r.latched).length; this.flags.rodsLatched = w.rods.filter((r) => r.latched).map((r) => r.id); this.save(); this.game.ui.toast(`Rod ${rod.id} struck — ${this.flags.latched} / 3`); if (this.flags.latched >= 3) this.openDoor(); }; w.onBaby = () => { this.flags.babies++; if (this.flags.babies >= 3) { this.memory('c4a'); } }; }
+  applySaved() {
+    const f = this.flags, w = this.game.world; for (const id of f.rodsLatched || []) { const r = w.rods.find((x) => x.id === id); if (r) r.latched = true; }
+    for (const b of w.babies) if (b.rod.latched) { b.fixed = false; b.face.set('happy'); b.drift.set(0.15, 0.02, 0.1); }
+    if (f.door) { w.doorOpen = true; w.doorCol.forEach((c) => (c.enabled = false)); w.door.position.y -= 7; this.game.setRestore(0.5, true); } if (f.revealed) w.wren.root.visible = true;
+    if (f.freed) { w.jarOpen = true; w.lid.position.y = 40; this.game.setRestore(1, true); }
+  }
   begin() { if (this.flags.intro) return; this.flags.intro = true; this.say([
     { who: 'narrator', text: 'On a thundercloud the size of a town, a factory had been built to make weather — and then to keep it.' },
     { who: 'juno', ex: 'surprised', text: 'Look at all the jars... sunshine, rain, snow, fog. They are all here. Fen — it is a weather library.' },
@@ -148,13 +154,13 @@ export class FactoryNarr extends ChapterNarr {
   update(dt, t) {
     this.updateCommon(dt, t); const g = this.game, w = g.world, f = this.flags, p = g.player;
     // hidden combo: charged cloud + rain + gust together = Disco Storm
-    const cc = w.weather.clouds.find((c) => (c.charge || 0) > 0.5 && c.raining > 0.5); if (cc && g.weather.gust.power > 0.5 && !f.disco) { this.dctimer += dt; if (this.dctimer > 1.6) { f.disco = true; g.ui.toast('DISCO STORM! Charge + rain + wind — the factory is dancing.', 6000); g.audio.sfx('finale'); this.memory('c4b'); w.gus.play('cheer'); w.flicker.play('cheer'); this.discoT = 8; } } else this.dctimer = Math.max(0, this.dctimer - dt);
+    const cc = w.weather.clouds.find((c) => (c.charge || 0) > 0.5 && c.raining > 0.5); if (cc && g.weather.gust.power > 0.5 && !f.disco) { this.dctimer += dt; if (this.dctimer > 1.6) { f.disco = true; g.combos?.discover('disco'); g.ui.toast('DISCO STORM! Charge + rain + wind — the factory is dancing.', 6000); g.audio.sfx('finale'); this.memory('c4b'); w.gus.play('cheer'); w.flicker.play('cheer'); this.discoT = 8; } } else this.dctimer = Math.max(0, this.dctimer - dt);
     if (this.discoT > 0) { this.discoT -= dt; if (Math.random() < dt * 5) g.weather.bolt(new THREE.Vector3(p.pos.x + (Math.random() - 0.5) * 24, 22, p.pos.z + (Math.random() - 0.5) * 24), new THREE.Vector3(p.pos.x + (Math.random() - 0.5) * 24, 0, p.pos.z + (Math.random() - 0.5) * 24), [0xff90ff, 0x90ffff, 0xffe070][(Math.random() * 3) | 0]); }
     // rainbow = mirror beam passing through a rain column near the jar
     let rb = false; if (f.revealed && !f.freed) for (const b of g.weather.beams) { if (b.power < 0.5) continue; for (const c of g.weather.clouds) { if (c.raining < 0.5 || c.precip === 'snow') continue; { const tt = clamp(new THREE.Vector3().subVectors(c.pos, b.o).dot(b.d), 0, b.len), pt = b.o.clone().addScaledVector(b.d, tt); if (pt.y < c.pos.y && pt.y > c.pos.y - 14 && Math.hypot(pt.x - c.pos.x, pt.z - c.pos.z) < c.footprint) { rb = true; } } if (rb) break; } if (rb) break; }
     if (rb) { this.rbT += dt; if (this.rbT > 2.2) this.finishGame(); } else this.rbT = Math.max(0, this.rbT - dt * 0.5); f.rainbow = Math.min(1, this.rbT / 2.2);
     if (f.revealed && !f.freed && !this.coaxed) { this.coaxed = true; g.ui.toast('Wren holds the jar still. Make sunshine and rain meet: mirror (Sun 4) + a raining cloud (Rain 2).', 8000); }
-    const st = f.latched < 3 ? 'rods' : !f.revealed ? 'door' : !f.freed ? 'jar' : 'done'; if (st !== this.step) { this.step = st; this.hintT = 0; }
+    const st = f.latched < 3 ? 'rods' : !f.revealed ? 'door' : !f.freed ? 'jar' : 'done'; if (st !== this.step) { this.step = st; this.stepChanged(); }
     const OBJ = { rods: 'Charge the three copper rods with a squashed storm cloud', door: 'The Engine Door is open — go inside', jar: 'Sunshine and rain at once: make a rainbow over the Great Jar', done: 'The weather is home!' };
     g.ui.setObjective(OBJ[st], st === 'rods' ? `${f.latched} / 3 rods · baby clouds freed: ${f.babies} / 3` : st === 'jar' ? `Rainbow ${(f.rainbow * 100) | 0}%` : '');
   }

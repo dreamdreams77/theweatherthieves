@@ -12,7 +12,10 @@ export class ChapterNarr {
   cd(k, s) { if ((this.cool_[k] ?? -99) > this.t) return false; this.cool_[k] = this.t + s; return true; }
   cool(k, s) { return this.cd(k, s); }
   say(lines, opts) { this.game.dialogue(lines, opts); }
-  init() { this.game.ui.setGlints(0); this.game.ui.setGlintMax?.(5); }
+  init() { this.game.ui.setGlints(Progress.data.memories.filter((x) => x.startsWith('c' + this.no)).length); for (const gl of this.game.world.glints || []) if (Progress.hasMemory(gl.id)) { gl.got = true; gl.group.visible = false; } }
+  /** re-apply saved puzzle progress to the freshly built world (overridden per chapter) */
+  applySaved() {}
+  stepChanged() { this.hintT = 0; this.save(); }
   save() { Progress.data.flags['ch' + this.no] = { ...this.flags }; Progress.save(); }
   restore() { const f = Progress.data.flags['ch' + this.no]; if (f) Object.assign(this.flags, f); }
   reset() {}

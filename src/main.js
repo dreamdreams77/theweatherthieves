@@ -1,6 +1,7 @@
 import './../src/style.css';
 import { Game } from './core/Game.js';
 import { Assets } from './gfx/Assets.js';
+import { Settings } from './core/Settings.js';
 
 const canvas = document.getElementById('c');
 const bar = document.querySelector('.loadbar i'), btn = document.getElementById('begin'), cont = document.getElementById('continue');
@@ -13,7 +14,7 @@ function start() {
     // yield so the loading UI paints, then build
     requestAnimationFrame(() => setTimeout(async () => {
       await Assets.load((p) => (bar.style.width = 35 + p * 35 + '%')); game.useAssets?.();
-      game.build((p) => (bar.style.width = 70 + p * 30 + '%'));
+      Settings.load(); game.build((p) => (bar.style.width = 70 + p * 30 + '%')); game.applySettings();
       window.__game = game;
       let has = false; try { has = !!localStorage.getItem('weather-thieves-save-v1'); } catch {}
       document.querySelector('.loadbar').style.display = 'none'; btn.disabled = false; btn.textContent = has ? 'Continue' : 'Begin the journey';

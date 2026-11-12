@@ -1,10 +1,27 @@
 /** Fully synthesised audio: ambient pads that brighten as weather returns, wind/rain beds, character blips and effects. */
 export class AudioManager {
-  constructor() { this.ctx = null; this.muted = false; this.restore = 0; this.rain = 0; this.wind = 0.1; this.started = false; }
+  constructor() { this.ctx = null; this.muted = false; this.restore = 0; this.rain = 0; this.wind = 0.1; this.started = false; this.ch = 1; this.vol = 0.8; this.musicVol = 1; this.nextEvent = 0; }
+  /** per-chapter soundscape: pad chords (lost -> restored), chime scale, ambient beds and recurring sound events */
+  static CH = {
+    1: { a: [220, 261.63, 329.63, 164.81], b: [261.63, 329.63, 392, 196], chime: [523.25, 587.33, 659.25, 783.99, 880, 1046.5], rain: 0, wind: 0.025, ev: 'birds' },
+    2: { a: [293.66, 349.23, 440, 220], b: [293.66, 369.99, 440, 220], chime: [587.33, 659.25, 739.99, 880, 987.77], rain: 0.025, wind: 0.02, ev: 'bells' },
+    3: { a: [164.81, 196, 246.94, 123.47], b: [164.81, 207.65, 246.94, 123.47], chime: [1318.5, 1567.98, 1975.5, 2349.3], rain: 0, wind: 0.07, ev: 'ice' },
+    4: { a: [130.81, 155.56, 196, 98], b: [130.81, 164.81, 196, 98], chime: [261.63, 311.13, 392, 466.16], rain: 0, wind: 0.04, ev: 'machine' },
+  };
+  setChapter(n) { this.ch = n; this.nextEvent = 0; if (this.ctx) { [0, 0.18, 0.36].forEach((w, i) => this.tone((AudioManager.CH[n] || AudioManager.CH[1]).chime[i] * 0.5, 1.6, 0.06, 'triangle', 1, w)); } }
+  setVolume(v) { this.vol = v; if (this.master && !this.muted) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); }
+  setMusic(v) { this.musicVol = v; if (this.padG) this.padG.gain.setTargetAtTime(0.5 * v, this.ctx.currentTime, 0.3); }
+  chapterEvent(t) {
+    const ev = (AudioManager.CH[this.ch] || {}).ev;
+    if (ev === 'birds') for (let i = 0; i < 3; i++) this.tone(2400 + Math.random() * 900, 0.08, 0.025, 'sine', 1.3, i * 0.11);
+    else if (ev === 'bells') [880, 1108.73, 1318.5].forEach((f, i) => this.tone(f, 1.4, 0.03, 'sine', 1, i * 0.25));
+    else if (ev === 'ice') { for (let i = 0; i < 4; i++) this.noise(0.05, 0.03, 6000 + i * 900, 'highpass'); this.tone(2793.8, 1.2, 0.015, 'sine'); }
+    else if (ev === 'machine') { for (let i = 0; i < 3; i++) this.noise(0.12, 0.08, 600, 'bandpass'); this.tone(55, 1.8, 0.08, 'sawtooth', 0.8); if (Math.random() < 0.4) this.noise(2.2, 0.18, 160, 'lowpass'); }
+  }
   start() {
     if (this.started) return; const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     try { this.ctx = new AC(); } catch { return; } const c = this.ctx; this.started = true;
-    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 0.8; this.master.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : this.vol; this.master.connect(c.destination);
     const comp = c.createDynamicsCompressor(); comp.connect(this.master); this.out = comp;
     const buf = c.createBuffer(1, c.sampleRate * 3, c.sampleRate), d = buf.getChannelData(0); let b0 = 0, b1 = 0, b2 = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; b0 = 0.99765 * b0 + w * 0.099; b1 = 0.963 * b1 + w * 0.2965; b2 = 0.57 * b2 + w * 1.0526; d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2; }
     this.noiseBuf = buf;
@@ -18,13 +35,14 @@ export class AudioManager {
     this.padG.gain.linearRampToValueAtTime(0.5, c.currentTime + 6);
     this.nextChime = c.currentTime + 4;
   }
-  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.05); }
+  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.vol, this.ctx.currentTime, 0.05); }
   update(dt, st) {
     if (!this.ctx) return; const c = this.ctx, t = c.currentTime;
-    this.restore = st.restore; this.windN.g.gain.setTargetAtTime(0.025 + st.wind * 0.22, t, 0.15); this.windN.f.frequency.setTargetAtTime(350 + st.wind * 900, t, 0.2);
-    this.rainN.g.gain.setTargetAtTime(st.rain * 0.12, t, 0.15); this.rainN2.g.gain.setTargetAtTime(st.rain * 0.05, t, 0.15);
-    const set = this.padSets[0], set2 = this.padSets[1]; for (const p of this.padOsc) p.o.frequency.setTargetAtTime(set[p.i] + (set2[p.i] - set[p.i]) * Math.min(1, st.restore * 1.4), t, 2);
-    if (t > this.nextChime) { const pent = [523.25, 587.33, 659.25, 783.99, 880, 1046.5]; this.tone(pent[(Math.random() * pent.length) | 0] * (st.restore > 0.5 ? 1 : 0.5), 0.9, 0.05, 'sine'); this.nextChime = t + 2.5 + Math.random() * (st.restore > 0.5 ? 4 : 9); }
+    this.restore = st.restore; const C = AudioManager.CH[this.ch] || AudioManager.CH[1]; this.windN.g.gain.setTargetAtTime(C.wind + st.wind * 0.22, t, 0.15); this.windN.f.frequency.setTargetAtTime(350 + st.wind * 900, t, 0.2);
+    this.rainN.g.gain.setTargetAtTime(C.rain + st.rain * 0.12, t, 0.15); this.rainN2.g.gain.setTargetAtTime(st.rain * 0.05, t, 0.15);
+    for (const p of this.padOsc) p.o.frequency.setTargetAtTime(C.a[p.i] + (C.b[p.i] - C.a[p.i]) * Math.min(1, st.restore * 1.4), t, 2);
+    if (t > this.nextChime) { const pent = C.chime; this.tone(pent[(Math.random() * pent.length) | 0] * (st.restore > 0.5 ? 1 : 0.5), 0.9, 0.05 * this.musicVol, 'sine'); this.nextChime = t + 2.5 + Math.random() * (st.restore > 0.5 ? 4 : 9); }
+    if (t > this.nextEvent) { if (this.nextEvent > 0) this.chapterEvent(t); this.nextEvent = t + 9 + Math.random() * 12; }
   }
   tone(f, dur = 0.3, vol = 0.1, type = 'sine', slide = 0, when = 0) {
     if (!this.ctx) return; const c = this.ctx, t = c.currentTime + when; const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);

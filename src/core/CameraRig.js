@@ -10,7 +10,7 @@ export class CameraRig {
   /** shot: {pos: Vector3, look: Vector3} or null */
   setShot(s) { this.shot = s; }
   update(dt, target, input, vel, terrain) {
-    this.yaw += input.orbit.x * 0.0052; this.pitch = clamp(this.pitch + input.orbit.y * 0.0042, -0.12, 1.2);
+    this.yaw += input.orbit.x * 0.0052; this.pitch = clamp(this.pitch + input.orbit.y * 0.0042 * (this.invertY ? -1 : 1), -0.12, 1.2);
     this.targetDist = clamp(this.targetDist + input.zoom * 0.9, 4.5, 15);
     this.dist = damp(this.dist, this.targetDist, 6, dt);
     this.lookAhead.x = damp(this.lookAhead.x, vel.x * 0.25, 2.5, dt); this.lookAhead.z = damp(this.lookAhead.z, vel.z * 0.25, 2.5, dt);

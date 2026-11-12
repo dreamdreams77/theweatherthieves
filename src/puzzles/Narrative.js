@@ -103,7 +103,7 @@ export class Narrative {
     // glints
     for (const gl of w.glints) { if (gl.got) continue; const dx = p.pos.x - gl.pos.x, dz = p.pos.z - gl.pos.z, dy = p.pos.y + 0.8 - gl.pos.y; if (Math.hypot(dx, dz) < 1.7 && Math.abs(dy) < 2.4) this.glintCollect(gl); }
     // pond hint
-    if (w.pond.frost > 0.9 && !this.cool.pondSaid && this.cd('pondSaid', 9999)) g.ui.toast('The pond froze solid — you can skate across it!');
+    if (w.pond.frost > 0.9) g.combos?.discover('skate');
     // rainbow: rain column overlapping a sun beam
     let rb = false; for (const b of g.weather.beams) { if (b.power < 0.5) continue; for (const c of g.weather.clouds) { if (c.raining < 0.5) continue; const o = new THREE.Vector3(c.pos.x, 0, c.pos.z); { const tt = clamp(new THREE.Vector3().subVectors(c.pos, b.o).dot(b.d), 0, b.len), pt = b.o.clone().addScaledVector(b.d, tt); if (pt.y < c.pos.y && pt.y > c.pos.y - 14 && Math.hypot(pt.x - c.pos.x, pt.z - c.pos.z) < c.footprint) { rb = true; this.rainbowAt = pt.clone(); } } if (rb) break; } if (rb) break; }
     if (rb && !this.finale) { this.rainbow.target = 1; const rp = this.rainbowAt; this.rainbow.group.position.lerp(new THREE.Vector3(rp.x, rp.y - 2, rp.z), 0.2); this.rainbow.group.rotation.y = Math.atan2(g.camera.position.x - rp.x, g.camera.position.z - rp.z) + Math.PI / 2 * 0 ;

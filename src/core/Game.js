@@ -16,6 +16,8 @@ import { AudioManager } from '../audio/Audio.js';
 import { Narrative, Say } from '../puzzles/Narrative.js';
 import * as S from '../ui/story.js';
 import { Progress } from './Progress.js';
+import { Settings } from './Settings.js';
+import { Combos } from './Combos.js';
 import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
 
@@ -45,7 +47,7 @@ export class Game {
     Progress.load(); const before0 = new Set(this.scene.children);
     this.world = new SunkenSky(this); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
-    this.ui = new UI(this); this.say = new Say(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
+    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
     this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = [...this.weather.reactives]; this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());
@@ -61,9 +63,9 @@ export class Game {
     setTimeout(() => {
       this.disposeWorld(); this.chapterNo = n; Progress.setChapter(n);
       const before = new Set(this.scene.children); this.world = new C.World(this); this.worldObjs = this.scene.children.filter((c) => !before.has(c));
-      this.narr = new C.Narr(this); this.narr.restore?.(); this.narr.init();
+      this.setRestore(C.restore ?? 0, true); this.narr = new C.Narr(this); this.narr.restore?.(); this.narr.init(); if (n === 1) this.narr.flags.intro = true;
       this.palette = { fogA: 0xb9b0c4, fogB: 0xf2d6bc, tint: 0x888888, tintAmt: 0, density: [0.0078, 0.0058], ...C.palette };
-      this.setRestore(C.restore ?? 0.35, true); this.weather.ambient = C.ambient || null; this.audio.setChapter?.(n);
+      if (n !== 1) this.setRestore(C.restore ?? 0.35, true); this.weather.ambient = C.ambient || null; this.audio.setChapter?.(n);
       const sp = this.world.spawn; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
       this.world.fenCloud && (this.world.fenCloud.owner = this.companion);
       this.rig.snap(this.player.pos); this.ui.setGlints(0); this.ui.setTool(0); this.ui.refreshMemories?.(); this.ui.showEnd && document.getElementById('end').classList.add('hidden');
@@ -85,7 +87,9 @@ export class Game {
     const P = this.palette; this.scene.fog.color.set(P.fogA).lerp(c.set(P.fogB), r); this.scene.fog.density = lerp(P.density[0], P.density[1], r); this.sky.tint.value.set(new THREE.Color(P.tint).r, new THREE.Color(P.tint).g, new THREE.Color(P.tint).b, P.tintAmt); this.fill.intensity = lerp(0.55, 0.35, r); this.renderer.toneMappingExposure = lerp(1.0, 1.05, r); this.scene.environmentIntensity = lerp(0.3, 0.5, r);
   }
   shot(s, dur = 4) { this.rig.setShot(s); this.shotT = s ? dur : 0; }
-  shake(a) { this.rig.shake = a; }
+  shake(a) { if (!Settings.data.reduceMotion) this.rig.shake = a; }
+  applySettings() { const s = Settings.data; this.audio.setVolume(s.volume); this.audio.setMusic(s.music); document.body.classList.toggle('big-text', !!s.bigText); document.body.classList.toggle('reduce-motion', !!s.reduceMotion); this.rig.invertY = !!s.invertY; }
+  pause(on) { if (on === this.paused) return; this.paused = on; this.ui.showPause(on); }
   entityOf(who) { const npc = (this.world.npcs || []).find((n) => n.id === who); if (npc) return { pos: npc.pos, yaw: npc.yaw, head: 1.45 * npc.k * (npc.spec.tall ?? 1), face: npc.face, c: npc, rig: npc }; if (who === 'juno') return { pos: this.player.pos, yaw: this.player.yaw, head: 1.35, face: this.player.juno.face, c: this.player, rig: this.player.juno }; if (who === 'fen') return { pos: this.companion.pos, yaw: this.companion.yaw, head: 2.1, face: this.companion.fen.face, c: this.companion, rig: this.companion.fen }; if (who === 'sunny' && this.world.sunny) return { pos: this.world.sunny.group.getWorldPosition(new THREE.Vector3()), yaw: Math.PI * 0.2, head: 0, face: this.world.sunny.face, c: null, rig: null }; return null; }
   /** play dialogue with cinematic speaker framing. opts: {noLock, shot=true, onEnd} */
   dialogue(lines, opts = {}) {
@@ -142,7 +146,7 @@ export class Game {
     this.player.update(dt, t, input, this.rig.yaw);
     this.companion.update(dt, t, this.player);
     const env = this.cloudEnv(); this.weather.clouds.forEach((c) => c.update(dt, t, env));
-    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.reactToWeather(dt);
+    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.reactToWeather(dt);
     // camera
     if (this.state === 'dialogue' || this.cinematic) { input.orbit.set(0, 0); }
     this.rig.update(dt, this.player.pos, input, this.player.vel, this.terrain); this.camera.updateMatrixWorld();
@@ -182,7 +186,7 @@ export class Game {
   sim(sec, dt = 1 / 30) { for (let t = 0; t < sec; t += dt) { this.update(dt); this.input.endFrame(); } }
   frame(dtReal) {
     const dt = Math.min(dtReal, 0.05);
-    this.update(dt);
+    if (!this.paused) this.update(dt); else this.input.endFrame();
     if (!this.noRender) this.renderer.render(this.scene, this.camera);
     this.input.endFrame();
     // adaptive resolution

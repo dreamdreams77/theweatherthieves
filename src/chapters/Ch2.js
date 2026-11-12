@@ -163,7 +163,7 @@ export class VillageWorld extends ChapterBase {
     for (const u of this.updaters) u(dt, t); for (const f of this.risingFalls) f.update(dt);
     for (const g of this.glints) if (!g.got && g.group.visible !== false) { g.group.rotation.y += dt * 1.2; g.group.position.y = g.pos.y + Math.sin(t * 2 + g.pos.x) * 0.1; }
     for (const p of this.pads) p.update(dt, t);
-    for (const h of this.hidden) { const c = this.fogCloudNear(h.pos); h.rev = damp(h.rev, c ? 1 : 0, 3, dt); h.group.visible = h.rev > 0.04; if (h.kind === 'glint' && h.glint.got) h.group.visible = false; h.group.scale.setScalar(Math.max(0.01, h.rev)); h.up = h.rev > 0.8; if (c && Math.random() < dt * 8) this.weather.smoke.spawn(new THREE.Vector3(h.pos.x + (Math.random() - 0.5) * 3, h.pos.y + 0.3, h.pos.z + (Math.random() - 0.5) * 3), new THREE.Vector3(0.1, 0.1, 0.1), { life: 2.5, size: 1.6, grow: 2 }); }
+    for (const h of this.hidden) { const c = this.fogCloudNear(h.pos); if (c && h.rev > 0.5) this.game.combos?.discover('fog'); h.rev = damp(h.rev, c ? 1 : 0, 3, dt); h.group.visible = h.rev > 0.04; if (h.kind === 'glint' && h.glint.got) h.group.visible = false; h.group.scale.setScalar(Math.max(0.01, h.rev)); h.up = h.rev > 0.8; if (c && Math.random() < dt * 8) this.weather.smoke.spawn(new THREE.Vector3(h.pos.x + (Math.random() - 0.5) * 3, h.pos.y + 0.3, h.pos.z + (Math.random() - 0.5) * 3), new THREE.Vector3(0.1, 0.1, 0.1), { life: 2.5, size: 1.6, grow: 2 }); }
     for (const n of this.npcs) { n.update(dt, t, this.game.player, this.game.camera.position); if (n.spec.spin) { n.yaw += dt * (this.game.weather.force(n.pos).length() > 1 ? 4 : 0.5); n.root.rotation.y = n.yaw; } }
     this.npcs.forEach((n) => (n.root.visible = n === this.wren ? n.root.visible : true));
     // basins
@@ -177,7 +177,13 @@ const V0 = null;
 
 export class VillageNarr extends ChapterNarr {
   constructor(game) { super(game, 2); Object.assign(this.flags, { pads: 0, valve: false, basins: 0, laughs: 0, rained: false, garden: false, umbrellasFound: 0, umbrellasReturned: 0, slide: false, basinsHint: false, wrong: 0 }); this.hints = { pads: 'Rain on the three giant umbrellas (Rain tool 2, hold over each) — open ones bounce you upward when you step on them.', fog: 'Squash/stretch a cloud wide (wheel) and hold it low over the balcony: fog reveals hidden things.', basins: 'Tock the weathervane knows the order — click him. Rain fills the basins one at a time.', laugh: 'The Dry Cloud giggles at gusts (Wind 3) and at sunlight.' }; this.fenIdle = ['Umbrellas. Everywhere. It is like being judged by flowers.', 'Why would a village celebrate rain? It makes everything damp.', 'I rather like the clock tower. It is the right kind of gloomy.']; }
-  init() { super.init(); const w = this.game.world; w.onBasin = (n) => { this.flags.basins = n; this.game.ui.toast(n >= 3 ? 'All three basins are full — the fountain is waking up!' : `Basin ${n} / 3 filled — correct order!`); }; w.onWrongOrder = () => { this.flags.wrong++; this.game.ui.toast('Wrong order! The basins drained. (Ask Tock which comes first.)'); this.game.say.fen('That was the wrong basin. I would say I told you so, but I didn\'t.'); }; w.onLaugh = (n) => { this.flags.laughs = n; if (n === 1) this.game.say.juno('It giggled! Again!'); if (n >= 3) this.freeDryCloud(); }; this.game.ui.setGlints(0); }
+  init() { super.init(); this.applySaved(); const w = this.game.world; w.onBasin = (n) => { this.flags.basins = n; this.save(); this.game.ui.toast(n >= 3 ? 'All three basins are full — the fountain is waking up!' : `Basin ${n} / 3 filled — correct order!`); }; w.onWrongOrder = () => { this.flags.wrong++; this.game.ui.toast('Wrong order! The basins drained. (Ask Tock which comes first.)'); this.game.say.fen('That was the wrong basin. I would say I told you so, but I didn\'t.'); }; w.onLaugh = (n) => { this.flags.laughs = n; if (n === 1) this.game.say.juno('It giggled! Again!'); if (n >= 3) this.freeDryCloud(); }; }
+  applySaved() {
+    const f = this.flags, w = this.game.world; (f.padWet || []).forEach((v, i) => { if (v && w.pads[i]) { w.pads[i].wet = 1; w.pads[i].open = 1; } });
+    if (f.valve) { w.flags.valve = true; w.valve.group.rotation.z += 1.5; } for (let i = 0; i < (f.basins || 0); i++) { w.basins[i].level = 1; w.basins[i].locked = true; } w.nextBasin = f.basins || 0;
+    if (f.garden) w.blooms.forEach((b) => { b.water = 1; b.bloomed = true; }); for (const id of f.taken || []) { const h = w.hidden.find((x) => x.id === id); if (h) { h.taken = true; h.group.scale.setScalar(0.001); } }
+    if (f.rained) { w.dryOpen = true; w.lid.position.y = 30; w.dry.face.set('happy'); this.game.setRestore(0.8, true); } else if (f.valve) this.game.setRestore(0.5, true);
+  }
   begin() { if (this.flags.intro) return; this.flags.intro = true; this.say([
     { who: 'narrator', text: 'The Village of Umbrellas had one holiday: the Day of Dancing in the Rain. This year, the rain did not come.' },
     { who: 'juno', ex: 'excited', text: 'Fen, look — a whole village built under umbrellas! Every roof is a giant parasol!' },
@@ -196,7 +202,7 @@ export class VillageNarr extends ChapterNarr {
   onInteract() {
     const g = this.game, w = g.world, p = g.player; const v = w.valve;
     if (v.up && !this.flags.valve && Math.hypot(p.pos.x - v.pos.x, p.pos.z - v.pos.z) < 3.4 && Math.abs(p.pos.y - (v.pos.y - 1.2)) < 2.4) { this.flags.valve = w.flags.valve = true; g.audio.sfx('unlock'); g.weather.burst(v.pos, 0x7fe0ff, 30, 4, 1.4); v.group.rotation.z += 1.5; g.setRestore(0.5); this.say([{ who: 'juno', ex: 'excited', text: 'It turned! Water is rushing down into the fountain pipes!' }, { who: 'fen', ex: 'neutral', text: 'The basins will fill in some order. There is always an order. I hate orders.' }], { noLock: true }); this.save(); return true; }
-    for (const h of w.hidden) if (h.kind === 'umbrella' && h.up && !h.taken && Math.hypot(p.pos.x - h.pos.x, p.pos.z - h.pos.z) < 2.6) { h.taken = true; h.group.visible = false; h.group.scale.setScalar(0.001); this.flags.umbrellasFound++; g.audio.sfx('glint'); g.ui.toast(`Lost umbrella found (${this.flags.umbrellasFound} / 3). Take them to Madam Orla.`); return true; }
+    for (const h of w.hidden) if (h.kind === 'umbrella' && h.up && !h.taken && Math.hypot(p.pos.x - h.pos.x, p.pos.z - h.pos.z) < 2.6) { h.taken = true; h.group.visible = false; h.group.scale.setScalar(0.001); this.flags.umbrellasFound++; (this.flags.taken ??= []).push(h.id); this.save(); g.audio.sfx('glint'); g.ui.toast(`Lost umbrella found (${this.flags.umbrellasFound} / 3). Take them to Madam Orla.`); return true; }
     return false;
   }
   npcLines(npc) {
@@ -208,10 +214,10 @@ export class VillageNarr extends ChapterNarr {
   }
   update(dt, t) {
     this.updateCommon(dt, t); const g = this.game, w = g.world, f = this.flags, p = g.player;
-    f.pads = w.pads.filter((x) => x.open > 0.9).length;
+    f.pads = w.pads.filter((x) => x.open > 0.9).length; f.padWet = w.pads.map((x) => (x.wet >= 1 ? 1 : 0));
     if (!f.garden && w.blooms.every((b) => b.bloomed)) { f.garden = true; g.audio.sfx('bloom'); const gl = w.glint(w.blooms[0].group.position.x, w.blooms[0].group.position.y + 1, w.blooms[0].group.position.z + 1.5, 'c2a', 'Garden memory'); w.glints.push(gl); g.ui.toast('Granny Mossback’s garden is blooming!'); this.save(); }
-    if (!f.slide && w.pads.every((x) => x.iced > 0.8 && x.wet >= 1)) { f.slide = true; g.audio.sfx('melt'); g.ui.toast('Frozen giant umbrellas! A village-wide ice slide — the Mayor calls it "official transport".'); g.say.fen('I did not authorise this. ...Again.'); const gl = w.glint(-5, w.V.heightAt(-5, -3) + 1, -3, 'c2c', 'Dancing memory'); w.glints.push(gl); }
-    const st = !f.valve ? (f.pads >= 3 ? 'fog' : 'pads') : f.basins < 3 ? 'basins' : !f.rained ? 'laugh' : 'done'; if (st !== this.step) { this.step = st; this.hintT = 0; }
+    if (!f.slide && w.pads.every((x) => x.iced > 0.8 && x.wet >= 1)) { f.slide = true; g.combos?.discover('iceslide'); g.audio.sfx('melt'); g.ui.toast('Frozen giant umbrellas! A village-wide ice slide — the Mayor calls it "official transport".'); g.say.fen('I did not authorise this. ...Again.'); const gl = w.glint(-5, w.V.heightAt(-5, -3) + 1, -3, 'c2c', 'Dancing memory'); w.glints.push(gl); }
+    const st = !f.valve ? (f.pads >= 3 ? 'fog' : 'pads') : f.basins < 3 ? 'basins' : !f.rained ? 'laugh' : 'done'; if (st !== this.step) { this.step = st; this.stepChanged(); }
     const OBJ = { pads: 'Open the three giant umbrellas with rain, then bounce up to the clock tower', fog: 'Fog the balcony (stretch a cloud, hold it low) and turn the hidden valve — F', basins: 'Fill the basins in the right order: ask Tock (click him)', laugh: 'Make the Dry Cloud laugh 3 times — blow gusts at it!', done: 'Chapter complete!' };
     const sub = st === 'pads' ? `${f.pads} / 3 umbrellas open` : st === 'basins' ? `${f.basins} / 3 basins · wrong orders: ${f.wrong}` : st === 'laugh' ? `${f.laughs} / 3 laughs` : '';
     g.ui.setObjective(OBJ[st], sub);
