@@ -36,7 +36,8 @@ export class Tools {
     if (gp && gp.t < best) { aim.point.set(gp.x, gp.y, gp.z); aim.ground = true; aim.hit = type === 'cloud' ? aim.hit : null; if (!(hit && best < gp.t)) { aim.hit = null; aim.hitType = null; } }
     if (hit && best <= (gp ? gp.t : Infinity)) { aim.point.copy(ro).addScaledVector(rd, best); aim.ground = false; }
     else if (!gp) { aim.point.copy(ro).addScaledVector(rd, 28); aim.ground = false; }
-    if (hit && type !== 'cloud' && gp) { aim.point.set(gp.x, gp.y, gp.z); aim.ground = true; } // pointing through a creature/prop still aims at the ground behind it
+    if (hit && type !== 'cloud' && gp) { aim.point.set(gp.x, gp.y, gp.z); aim.ground = true; }
+    aim.groundPoint = gp ? new THREE.Vector3(gp.x, gp.y, gp.z) : null; // pointing through a creature/prop still aims at the ground behind it
     aim.dist = best;
     return aim;
   }
@@ -48,6 +49,8 @@ export class Tools {
     const locked = g.state !== 'play' || p.locked;
     const useDown = !locked && (input.down || input.useHeld), useJust = !locked && (input.justDown || input.tapUse || input.tap);
     const tool = this.tool; const origin = _o.set(p.pos.x, p.pos.y + 1.0, p.pos.z);
+    // only the Cloud tool aims *at* clouds; every other tool aims at the ground behind them
+    if (tool !== 'cloud' && aim.hitType === 'cloud' && aim.groundPoint && !g.debugAim) { aim.point.copy(aim.groundPoint); aim.ground = true; }
     // --- cloud grabbing is available with the Cloud tool AND by clicking any cloud
     const clickCloud = useJust && aim.hitType === 'cloud' && (tool === 'cloud' || tool === 'rain');
     if (clickCloud && !this.held) this.grab(aim.hit);
