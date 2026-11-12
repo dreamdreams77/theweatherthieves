@@ -4,6 +4,9 @@ import { ChapterBase } from './ChapterBase.js';
 import { BridgeSurface } from './Terrain.js';
 import { Parts, mesh, vcMat, tube, puff } from './Build.js';
 import * as Flora from './Flora.js';
+import { SETS } from './AssetSets.js';
+import { Assets } from '../gfx/Assets.js';
+import { Wildlife } from '../characters/Wildlife.js';
 import * as Props from './Props.js';
 import { BloomPlant, SunMirror, IceBlock, SunGate, FeatherCrate, PressurePlate, Windmill, Lift } from './PuzzleProps.js';
 import { Puffkin, Sunny } from '../characters/Creatures.js';
@@ -14,6 +17,7 @@ import { std } from '../gfx/Mat.js';
 import { rng, TAU, lerp, smoothstep } from '../core/Utils.js';
 
 /** Builds THE SUNKEN SKY - four hand-placed islands, a village of props, a lot of tiny details and the three puzzles. */
+const ROCK1 = (seed, sz) => SETS.rock()(seed, sz);
 export class SunkenSky extends ChapterBase {
   constructor(game) {
     super(); this.game = game; const { scene, terrain, weather, quality: q } = game; this.q = q; this.scene = scene; this.terrain = terrain; this.weather = weather;
@@ -25,7 +29,7 @@ export class SunkenSky extends ChapterBase {
     this.C = mk({ id: 'rise', name: 'Windmill Rise', x: -14, y: 9, z: -58, r: 13, seed: 3, hill: 1.0, flat: [[-16, -62, 4], [-6, -56, 3], [-10, -55, 5], [-4.5, -60, 3.5], [-8, -53, 5]], grass: [0x9aa84a, 0xd6c25c], tint: new THREE.Color(0xd9b25a) });
     this.D = mk({ id: 'summit', name: 'Jar Summit', x: 26, y: 18, z: -62, r: 10.5, seed: 4, hill: 0.8, flat: [[26, -62, 6]], grass: [0x56a58c, 0xa4d4a0], tint: new THREE.Color(0x8ad0c0) });
     this.islands = [this.H, this.B, this.C, this.D];
-    this.buildFar(); this.buildHome(); this.buildMeadow(); this.buildRise(); this.buildSummit(); this.buildBridges(); this.buildClouds();
+    this.buildFar(); this.buildHome(); this.buildMeadow(); this.buildRise(); this.buildSummit(); this.buildBridges(); this.buildClouds(); this.buildNature();
   }
   // ---------------------------------------------------------------- far scenery
   buildFar() {
@@ -81,9 +85,9 @@ export class SunkenSky extends ChapterBase {
     // waterfall(s)
     const rf = new Props.RisingFall(scene, 11.2, H.heightAt(11.2, 5.5) + 0.3, 5.5, { height: 24, radius: 1.2, quality: q, seed: 3 }); this.risingFalls.push(rf); this.cloudRefill.push(rf.top); terrain.addCollider({ x: 11.2, z: 5.5, r: 3.9 }); this.rf1 = rf;
     // plants
-    const pines = this.scatterTrees(H, 9, 21, avoid, [Flora.umbrellaPine, Flora.cloudcapTree, Flora.cloudcapTree]);
+    const pines = this.scatterTrees(H, 9, 21, avoid, [SETS.common(), SETS.birch(), Flora.cloudcapTree]);
     for (let i = 0; i < 12; i++) { const th = r() * TAU, rho = 4 + r() * 10, x = Math.cos(th) * rho, z = Math.sin(th) * rho, y = H.heightAt(x, z); if (y === -Infinity || H.nearEdge(x, z) > 0.9 || avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue;
-      const k = i % 4; const o = k === 0 ? Flora.spotMushroom(30 + i, 0.8 + r() * 0.7, [0xd8505a, 0xe89a3c, 0xb06ad8][i % 3]) : k === 1 ? Flora.crookFern(40 + i, 1) : k === 2 ? Flora.pillowMoss(50 + i, 1 + r()) : Flora.rock(60 + i, 1 + r()); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; this.scene.add(o); if (k !== 1) terrain.addCollider({ x, z, r: 0.5, y0: y - 1, y1: y + 3 }); }
+      const k = i % 4; const o = k === 0 ? Flora.spotMushroom(30 + i, 0.8 + r() * 0.7, [0xd8505a, 0xe89a3c, 0xb06ad8][i % 3]) : k === 1 ? Flora.crookFern(40 + i, 1) : k === 2 ? Flora.pillowMoss(50 + i, 1 + r()) : ROCK1(60 + i, 1 + r()); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; this.scene.add(o); if (k !== 1) terrain.addCollider({ x, z, r: 0.5, y0: y - 1, y1: y + 3 }); }
     scene.add(Flora.scatterGrass(H, q, avoid.concat(terrain.colliders.map((c) => [c.x, c.z, c.r + 0.2])), { density: 7 }));
     // village-y details
     const bench = Props.bench(); this.place(bench, H, -1.2, 8.8, 3.3, 1); const bar = Props.wellBarrel(); this.place(bar, H, -9.4, 2, 0, 1.1, 0, 0.5); const bar2 = Props.wellBarrel(); this.place(bar2, H, -9.8, 3.2, 1, 0.9, 0, 0.4);
@@ -117,8 +121,8 @@ export class SunkenSky extends ChapterBase {
     const sign = Props.signpost(); this.place(sign, B, -26.5, -23.8, -0.6, 1, 0, 0.2);
     const arch = Props.ruinArch(1); this.place(arch, B, -41, -19, 0.4, 1, 0, 0);
     const wc = Props.windChimes(); wc.position.set(-30.2, this.on(B, -30.2, -22.5, 3.4), -22.5); scene.add(wc); this.chimes.push(wc);
-    this.scatterTrees(B, 8, 91, avoid, [Flora.cloudcapTree, Flora.cloudcapTree, Flora.umbrellaPine]);
-    for (let i = 0; i < 10; i++) { const th = r() * TAU, rho = 3 + r() * 8, x = B.x + Math.cos(th) * rho, z = B.z + Math.sin(th) * rho, y = B.heightAt(x, z); if (y === -Infinity || B.nearEdge(x, z) > 0.88 || avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue; const k = i % 3; const o = k === 0 ? Flora.crookFern(100 + i) : k === 1 ? Flora.pillowMoss(110 + i, 1.2) : Flora.rock(120 + i, 1.3); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k) terrain.addCollider({ x, z, r: 0.6 }); }
+    this.scatterTrees(B, 8, 91, avoid, [Flora.cloudcapTree, SETS.willow(), SETS.birch('meadow')]);
+    for (let i = 0; i < 10; i++) { const th = r() * TAU, rho = 3 + r() * 8, x = B.x + Math.cos(th) * rho, z = B.z + Math.sin(th) * rho, y = B.heightAt(x, z); if (y === -Infinity || B.nearEdge(x, z) > 0.88 || avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue; const k = i % 3; const o = k === 0 ? Flora.crookFern(100 + i) : k === 1 ? Flora.pillowMoss(110 + i, 1.2) : ROCK1(120 + i, 1.3); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k) terrain.addCollider({ x, z, r: 0.6 }); }
     scene.add(Flora.scatterGrass(B, q, avoid.concat(terrain.colliders.filter((c) => Math.hypot(c.x - B.x, c.z - B.z) < 14).map((c) => [c.x, c.z, c.r + 0.2])), { density: 8, a: 0x3c9a7c, b: 0x9ad28a, flowers: [0xffffff, 0x9fe8ff, 0xb59cff, 0xff9fd0] }));
     const rf = new Props.RisingFall(scene, -43, this.on(B, -43, -10) + 0.3, -10, { height: 18, radius: 0.9, quality: q, seed: 5 }); if (B.heightAt(-43, -10) === -Infinity) { rf.group.position.set(-41.5, B.heightAt(-41.5, -10) + 0.3, -10); } this.risingFalls.push(rf); this.cloudRefill.push(rf.top);
   }
@@ -144,8 +148,8 @@ export class SunkenSky extends ChapterBase {
     for (let i = 0; i < 3; i++) { const wc = Props.windChimes(); const x = -12 + i * 4.5, z = -49.5; wc.position.set(x, this.on(C, x, z, 3.8), z); scene.add(wc); this.chimes.push(wc); const po = mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.9, 6), std({ color: 0x7a5a42 })); this.place(po, C, x, z, 0, 1, 1.9, 0.2); }
     const sign = Props.signpost(); this.place(sign, C, -19, -48.8, 0.5, 1, 0, 0.2); const l1 = Props.lanternPost(2.6, 0xffc46a); this.place(l1, C, -22.5, -47, 1.5, 1); this.lamps.push(l1.userData.lamp);
     this.glintRise = this.glint(-26, this.on(C, -26, -60, 1.0), -60, 'rise', 'Cliff Glint');
-    this.scatterTrees(C, 7, 111, avoid, [Flora.umbrellaPine, Flora.cloudcapTree]);
-    for (let i = 0; i < 12; i++) { const th = r() * TAU, rho = 3 + r() * 10, x = C.x + Math.cos(th) * rho, z = C.z + Math.sin(th) * rho, y = C.heightAt(x, z); if (y === -Infinity || C.nearEdge(x, z) > 0.88 || avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue; const k = i % 3; const o = k === 0 ? Flora.crookFern(140 + i) : k === 1 ? Flora.spotMushroom(150 + i, 0.8, 0xe89a3c) : Flora.rock(160 + i, 1.4); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k) terrain.addCollider({ x, z, r: 0.55 }); }
+    this.scatterTrees(C, 7, 111, avoid, [SETS.pine(), SETS.common()]);
+    for (let i = 0; i < 12; i++) { const th = r() * TAU, rho = 3 + r() * 10, x = C.x + Math.cos(th) * rho, z = C.z + Math.sin(th) * rho, y = C.heightAt(x, z); if (y === -Infinity || C.nearEdge(x, z) > 0.88 || avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue; const k = i % 3; const o = k === 0 ? Flora.crookFern(140 + i) : k === 1 ? Flora.spotMushroom(150 + i, 0.8, 0xe89a3c) : ROCK1(160 + i, 1.4); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k) terrain.addCollider({ x, z, r: 0.55 }); }
     scene.add(Flora.scatterGrass(C, q, avoid.concat(terrain.colliders.filter((c) => Math.hypot(c.x - C.x, c.z - C.z) < 15).map((c) => [c.x, c.z, c.r + 0.2])), { density: 7, a: 0x9aa84a, b: 0xe4cf6a, flowers: [0xff8a5a, 0xffd05a, 0xffffff] }));
   }
   // ---------------------------------------------------------------- SUMMIT
@@ -173,7 +177,7 @@ export class SunkenSky extends ChapterBase {
     for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU + 0.5, x = jp.x + Math.cos(a) * 7.5, z = jp.z + Math.sin(a) * 7.5; if (D.heightAt(x, z) === -Infinity || D.nearEdge(x, z) > 0.85) continue; const b = Props.bench(); this.place(b, D, x, z, -a + Math.PI / 2, 1.1, 0, 0.7); }
     const lp = Props.lanternPost(2.6, 0xffd58a); this.place(lp, D, 17.8, -59.5, 1.2, 1); this.lamps.push(lp.userData.lamp);
     const rf = new Props.RisingFall(scene, 33, this.on(D, 33, -66) + 0.3, -66, { height: 36, radius: 2.0, quality: q, seed: 9 }); this.risingFalls.push(rf); this.cloudRefill.push(rf.top); terrain.addCollider({ x: 33, z: -66, r: 5.6 }); this.rfSummit = rf;
-    this.scatterTrees(D, 5, 131, [[jp.x, jp.z, 6.5], [33, -66, 6.5], [17, -62, 3]], [Flora.cloudcapTree, Flora.umbrellaPine]);
+    this.scatterTrees(D, 5, 131, [[jp.x, jp.z, 6.5], [33, -66, 6.5], [17, -62, 3]], [Flora.cloudcapTree, SETS.common()]);
     scene.add(Flora.scatterGrass(D, q, [[jp.x, jp.z, 5], [33, -66, 6]].concat(terrain.colliders.filter((c) => Math.hypot(c.x - D.x, c.z - D.z) < 12).map((c) => [c.x, c.z, c.r + 0.2])), { density: 7, a: 0x56a58c, b: 0xb4e0a0 }));
   }
   // ---------------------------------------------------------------- BRIDGES
@@ -204,6 +208,17 @@ export class SunkenSky extends ChapterBase {
     // Puffkins
     const pk = [[3, 6], [-1, -2], [6, 1], [-31, -12], [-27, -21], [-9, -52]];
     pk.forEach(([x, z], i) => { const isl = this.islands.find((s) => s.heightAt(x, z) !== -Infinity); if (!isl) return; const p = new Puffkin(new THREE.Vector3(x, isl.heightAt(x, z), z), 200 + i, this.terrain); this.scene.add(p.group); this.weather.register(p); this.puffkins.push(p); this.updaters.push((dt, t) => p.update(dt, t, this.game.player, this.game.fen)); });
+  }
+  /** CC0 nature clutter, lilypads and wildlife */
+  buildNature() {
+    const { scene, terrain, weather } = this; const av = (i, extra) => terrain.colliders.filter((c) => Math.hypot(c.x - i.x, c.z - i.z) < i.r + 2).map((c) => [c.x, c.z, c.r + 0.4]).concat(extra);
+    Flora.scatterClutter(scene, terrain, this.H, 16, 501, av(this.H, [[-6, 4, 4], [7.5, -3, 4.2], [-3, -8, 4.5], [0, 8, 3], [3, 8, 2], [-11, -6, 2.5]]), [SETS.bush(), SETS.flowers(), SETS.stump(), SETS.flowers()], { collide: false });
+    Flora.scatterClutter(scene, terrain, this.B, 12, 502, av(this.B, [[-31, -18, 3], [-29.8, -26.5, 5], [-24.5, -14.4, 3]]), [SETS.bush('meadow'), SETS.flowers('meadow'), SETS.stump()], { collide: false });
+    Flora.scatterClutter(scene, terrain, this.C, 10, 503, av(this.C, [[-16, -62, 4.5], [-6, -56, 3.2], [-10, -55, 5.5], [-4.5, -60, 3.5], [-8, -53, 5], [-18, -53, 4]]), [SETS.bush(), SETS.stump(), SETS.flowers()], { collide: false });
+    Flora.scatterClutter(scene, terrain, this.D, 6, 504, av(this.D, [[26, -62, 6.5], [33, -66, 6.5], [17, -62, 3]]), [SETS.bush(), SETS.flowers()], { collide: false });
+    if (Assets.has('Lilypad')) for (let i = 0; i < 5; i++) { const a = i * 1.3 + 0.4, rr = 1.5 + (i % 2) * 1.2; const l = Assets.mesh('Lilypad', 'soft', 0.25); l.position.set(-3 + Math.cos(a) * rr, this.pond.y + 0.14, -8 + Math.sin(a) * rr); l.rotation.y = a * 2; l.scale.multiplyScalar(2.2); scene.add(l); }
+    this.wild = [];
+    for (const [name, x, z, h, roam] of [['Fox', 6, 9, 0.75, 4], ['Deer', -37, -24, 1.7, 5], ['Fox', -12, -66, 0.75, 4]]) { const w = new Wildlife(scene, terrain, name, x, z, { height: h, roam }); if (!w.ok) continue; this.wild.push(w); weather.register({ get pos() { return w.pos; }, radius: 0.8, weather: (dt, ww) => w.weather(dt, ww) }); this.updaters.push((dt) => w.update(dt, this.game.player)); }
   }
   refillAt(pos) { let r = 0; for (const t of this.cloudRefill) { const d = Math.hypot(pos.x - t.x, pos.z - t.z, (pos.y - t.y) * 0.5); if (d < 9) r = Math.max(r, (1 - d / 9) * 0.5); } return r; }
   update(dt, t) {

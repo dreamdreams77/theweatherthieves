@@ -23,8 +23,8 @@ export class ChapterBase {
     for (let k = 0, tries = 0; k < n && tries < 400; tries++) {
       const th = r() * TAU, rho = (0.25 + 0.7 * Math.sqrt(r())) * i.r, x = i.x + Math.cos(th) * rho, z = i.z + Math.sin(th) * rho, y = i.heightAt(x, z);
       if (y === -Infinity || i.nearEdge(x, z) > 0.88) continue; if (avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 1.2) ** 2)) continue;
-      const kind = kinds[(r() * kinds.length) | 0], o = kind(seed + k * 7); o.position.set(x, y - 0.05, z); o.rotation.y = r() * 6; const s = 0.6 + r() * 0.35; o.scale.setScalar(s); this.scene.add(o);
-      const tr = (o.userData.trunkR || 0.4) * s; this.terrain.addCollider({ x, z, r: tr, y0: y - 1, y1: y + 10, cam: { r: 2.7 * s, y0: y + 2.2, y1: y + 9 } }); avoid.push([x, z, tr + 0.8]); k++; out.push(o);
+      const kind = kinds[(r() * kinds.length) | 0], o = kind(seed + k * 7); o.position.set(x, y - 0.05, z); o.rotation.y = r() * 6; const s = 0.6 + r() * 0.35; o.scale.multiplyScalar(o.userData.canopy ? 1 + (s - 0.78) : s); this.scene.add(o);
+      const tr = (o.userData.trunkR || 0.4) * s; this.terrain.addCollider({ x, z, r: tr, y0: y - 1, y1: y + 10, cam: { r: o.userData.canopy ? o.userData.canopy * o.scale.x / (o.scale.x || 1) * 0.9 : 2.7 * s, y0: y + 2.2, y1: y + 12 } }); avoid.push([x, z, tr + 0.8]); k++; out.push(o);
     } return out;
   }
   edge(i, toX, toZ, inset = 1.1) { const dx = toX - i.x, dz = toZ - i.z, L = Math.hypot(dx, dz); const ux = dx / L, uz = dz / L; for (let d = i.r * 1.3; d > 0; d -= 0.15) { const x = i.x + ux * d, z = i.z + uz * d; if (i.heightAt(x, z) !== -Infinity && i.nearEdge(x, z) < 0.93) return new THREE.Vector3(x - ux * inset * 0.0, i.heightAt(x, z) + 0.12, z); } return new THREE.Vector3(i.x, i.y, i.z); }

@@ -4,6 +4,9 @@ import { ChapterBase } from '../world/ChapterBase.js';
 import { DiscSurface } from '../world/Terrain.js';
 import { Parts, mesh, vcMat, tube, puff } from '../world/Build.js';
 import * as Flora from '../world/Flora.js';
+import { SETS } from '../world/AssetSets.js';
+import { Assets } from '../gfx/Assets.js';
+import { Wildlife } from '../characters/Wildlife.js';
 import * as Props from '../world/Props.js';
 import { SunMirror, IceBlock, PressurePlate } from '../world/PuzzleProps.js';
 import { Sunny } from '../characters/Creatures.js';
@@ -32,7 +35,7 @@ export class SnowZone {
 class IceSeg {
   constructor(scene, terrain, x, z, w, l, y) {
     this.pos = new THREE.Vector3(x, y, z); this.x = x; this.z = z; this.w = w; this.l = l; this.y = y; this.frozen = 0; this.radius = Math.max(w, l) * 0.5; this.enabled = true;
-    this.sheet = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, l), new THREE.MeshStandardMaterial({ color: 0xd8f0ff, roughness: 0.15, transparent: true, opacity: 0, emissive: 0x5ab0e0, emissiveIntensity: 0.2 })); this.sheet.position.set(x, y - 0.1, z); scene.add(this.sheet);
+    const it = Assets.tex; this.sheet = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, l), new THREE.MeshStandardMaterial({ color: 0xe8f6ff, roughness: 0.25, transparent: true, opacity: 0, emissive: 0x5ab0e0, emissiveIntensity: 0.12, map: it.iceColor || null, normalMap: it.iceNormal || null, roughnessMap: it.iceRough || null })); this.sheet.position.set(x, y - 0.1, z); scene.add(this.sheet);
     this.surf = { enabled: false, isIce: true, heightAt: (px, pz) => (Math.abs(px - x) < w / 2 && Math.abs(pz - z) < l / 2 ? this.y : -Infinity) }; terrain.addSurface(this.surf);
   }
   weather(dt, w) { if (w.frost > 0.2) this.frozen = Math.min(1, this.frozen + dt * 0.5 * w.frost); else if (w.sun > 0.3) this.frozen = Math.max(0, this.frozen - dt * 0.3 * w.sun); }
@@ -70,13 +73,15 @@ export class ForestWorld extends ChapterBase {
     const { A, scene, terrain, q } = this, r = rng(14); const av = [[0, 17, 4], [-12, 6, 5], [0, -16, 4], [-6, -8, 4], [14, -6, 3.5], [10, 6, 5], [0, -21, 6]];
     const pine = (seed) => { const rr = rng(seed), p = new Parts(), h = 4 + rr() * 3; p.add(new THREE.CylinderGeometry(0.2, 0.3, h * 0.4, 6), 0x6a4a3a, { p: [0, h * 0.2, 0] }); for (let i = 0; i < 4; i++) { const k = 1 - i * 0.22; p.add(new THREE.ConeGeometry(2.0 * k, 1.8, 8), 0x3f7a68, { p: [0, h * 0.35 + i * 1.05, 0], jitter: 0.15 }); p.add(new THREE.ConeGeometry(1.9 * k, 0.8, 8), 0xf4f8ff, { p: [0, h * 0.35 + i * 1.05 + 0.5, 0] }); }
       for (let i = 0; i < 4; i++) { const a = rr() * TAU; p.add(new THREE.ConeGeometry(0.1, 0.5, 5), 0x9fe0ff, { p: [Math.cos(a) * 1.3, h * 0.4 + rr() * 2, Math.sin(a) * 1.3], r: [Math.PI, 0, 0] }); } const m = mesh(p.merge(), vcMat({ roughness: 0.85 }, { sway: 6, amp: 0.2 })); m.userData.trunkR = 0.5; return m; };
-    this.scatterTrees(A, 22, 81, av, [pine, pine, pine, Flora.rock]); this.scatterTrees(this.B, 16, 82, [[-4, -50, 11], [20, -46, 8], [4, -33, 6], [12, -50, 6]], [pine, pine, Flora.rock]);
-    for (let i = 0; i < 12; i++) { const th = r() * TAU, rho = 4 + r() * 16, x = Math.cos(th) * rho, z = Math.sin(th) * rho, y = A.heightAt(x, z); if (y === -Infinity || A.nearEdge(x, z) > 0.9 || av.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.5) ** 2)) continue; const o = i % 2 ? Flora.rock(60 + i, 1 + r()) : Flora.crookFern(40 + i); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); terrain.addCollider({ x, z, r: 0.5 }); }
+    const SP = SETS.snowPine(), SB = SETS.snowBirch(), SR = SETS.snowRock(); this.scatterTrees(A, 22, 81, av, [SP, SP, pine, SB, SR]); this.scatterTrees(this.B, 16, 82, [[-4, -50, 11], [20, -46, 8], [4, -33, 6], [12, -50, 6]], [SP, SB, SR]);
+    for (let i = 0; i < 12; i++) { const th = r() * TAU, rho = 4 + r() * 16, x = Math.cos(th) * rho, z = Math.sin(th) * rho, y = A.heightAt(x, z); if (y === -Infinity || A.nearEdge(x, z) > 0.9 || av.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.5) ** 2)) continue; const o = i % 2 ? SETS.snowRock()(60 + i, 1 + r() * 0.5) : SETS.snowStump()(40 + i); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); terrain.addCollider({ x, z, r: 0.5 }); }
     // Flicker's cabin
     const cp = new Parts(); cp.add(new THREE.BoxGeometry(4, 2.6, 3.2), 0xb08a5c, { p: [0, 1.3, 0], jitter: 0.1 }); cp.add(new THREE.ConeGeometry(3.4, 2, 4), 0xf4f8ff, { p: [0, 3.5, 0], r: [0, Math.PI / 4, 0], s: [1, 1, 0.8] }); cp.add(new THREE.BoxGeometry(0.7, 1.6, 0.15), 0x6a4a8a, { p: [0, 0.8, 1.65] }); cp.add(new THREE.CylinderGeometry(0.3, 0.35, 1.4, 8), 0x8a6a62, { p: [1.2, 3.6, -0.5] });
     const cabin = mesh(cp.merge(), vcMat({ roughness: 0.85 })); this.place(cabin, A, -12, 6, 0.4, 1, 0, 2.4); const wm = new THREE.MeshStandardMaterial({ color: 0xffd58a, emissive: 0xffb04a, emissiveIntensity: 1.2 }); for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), wm); w.position.set(-12 + s * 1.2 + Math.sin(0.4) * 0.2, A.heightAt(-12, 6) + 1.4, 6 + 1.62); w.rotation.y = 0.4; this.scene.add(w); }
     for (const [x, z] of [[-9, 10], [-4, 12], [6, 11]]) { const l = Props.lanternPost(2.4, 0xffc46a); this.place(l, A, x, z, 1, 1); terrain.addCollider({ x, z, r: 0.2 }); }
     this.place(Props.signpost(), A, 2, 15, 0.4, 1, 0, 0.2);
+    Flora.scatterClutter(scene, terrain, A, 12, 701, av.map((a) => [a[0], a[1], a[2] + 1]), [SETS.snowBush(), SETS.snowStump()], { collide: false });
+    this.wild = []; for (const [name, x, z, h, roam] of [['Deer', -10, -12, 1.7, 5], ['Stag', 14, -60, 2.0, 5]]) { const w = new Wildlife(scene, terrain, name, x, z, { height: h, roam }); if (!w.ok) continue; this.wild.push(w); this.weather.register({ get pos() { return w.pos; }, radius: 0.8, weather: (dt, ww) => w.weather(dt, ww) }); this.updaters.push((dt) => w.update(dt, this.game.player)); }
     scene.add(Flora.scatterGrass(A, q, av.map((a) => [a[0], a[1], a[2] + 0.5]), { density: 2.2, a: 0xc8dcee, b: 0xf0f6ff, flowers: [0xffffff, 0x9fe8ff, 0xb59cff] }));
     this.risingFalls.push(new Props.RisingFall(scene, 18, A.heightAt(14, 10) + 0.3, 12, { height: 24, radius: 1.2, quality: q, seed: 8 })); terrain.addCollider({ x: 18, z: 12, r: 4 });
   }

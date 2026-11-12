@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Parts, mesh, vcMat, tube, puff } from './Build.js';
 import { std } from '../gfx/Mat.js';
 import { rng, TAU, lerp } from '../core/Utils.js';
+import { Assets } from '../gfx/Assets.js';
 
 function bladeGeo() {
   const pos = [], idx = [];
@@ -86,4 +87,23 @@ export function lanternbloom() {
     const hinge = new THREE.Group(); hinge.position.set(0.1, -0.2, 0); hinge.add(pt); pt.position.set(0.0, 0.4, 0); pv.add(hinge); head.add(pv); petals.push({ hinge, pv, pt }); }
   const leaf = new THREE.PointLight(0xffa860, 0, 6, 2); leaf.position.y = 0.2; head.add(leaf);
   return { group: g, bulb, head, petals, light: leaf, petalMat: pm };
+}
+
+/** CC0 model factories: pick one of `names`, recolour with `pal`, size it between hMin..hMax metres. */
+export function qtree(names, hMin, hMax, pal = 'soft', fallback = cloudcapTree, trunk = 0.07) {
+  return (seed) => { const r = rng(seed * 3 + 7), n = names[(r() * names.length) | 0], h = hMin + r() * (hMax - hMin); const m = Assets.mesh(n, pal, h, true); if (!m) return fallback(seed); m.userData.trunkR = Math.max(0.25, trunk * h * 2.2); m.userData.canopy = m.userData.width * 0.5; return m; };
+}
+export function qprop(names, hMin, hMax, pal = 'soft', sway = false, fallback = rock) {
+  return (seed, s = 1) => { const r = rng(seed * 5 + 3), n = names[(r() * names.length) | 0], h = (hMin + r() * (hMax - hMin)) * s; const m = Assets.mesh(n, pal, h, sway); if (!m) return fallback(seed, s); m.userData.trunkR = m.userData.width * 0.4; return m; };
+}
+/** scatter clutter (bushes, flowers, stumps, logs) on an island, avoiding circles; returns placed meshes */
+export function scatterClutter(scene, terrain, island, n, seed, avoid, kinds, { collide = true } = {}) {
+  const r = rng(seed), out = [];
+  for (let k = 0, tries = 0; k < n && tries < n * 30; tries++) {
+    const th = r() * TAU, rho = (0.15 + 0.8 * Math.sqrt(r())) * island.r, x = island.x + Math.cos(th) * rho, z = island.z + Math.sin(th) * rho, y = island.heightAt(x, z);
+    if (y === -Infinity || island.nearEdge(x, z) > 0.9) continue; if (avoid.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.6) ** 2)) continue;
+    const kind = kinds[(r() * kinds.length) | 0], o = kind(seed + k * 11); if (!o) continue; o.position.set(x, y - 0.04, z); o.rotation.y = r() * TAU; scene.add(o); out.push(o); k++;
+    const w = o.userData.trunkR ?? 0.4; if (collide && w > 0.35) { terrain.addCollider({ x, z, r: w, y0: y - 1, y1: y + 2.5 }); avoid.push([x, z, w + 0.3]); }
+  }
+  return out;
 }

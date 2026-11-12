@@ -16,6 +16,7 @@ import { AudioManager } from '../audio/Audio.js';
 import { Narrative, Say } from '../puzzles/Narrative.js';
 import * as S from '../ui/story.js';
 import { Progress } from './Progress.js';
+import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
 
 export class Game {
@@ -28,7 +29,7 @@ export class Game {
     this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.3, 2500); this.camera.position.set(0, 6, 22);
     this.sunDir = new THREE.Vector3(0.38, 0.5, -0.62).normalize();
     this.scene.fog = new THREE.FogExp2(0xb9b0c4, 0.0075);
-    const pm = new THREE.PMREMGenerator(r); this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; this.scene.environmentIntensity = 0.3;
+    const pm = this.pmrem = new THREE.PMREMGenerator(r); this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; this.scene.environmentIntensity = 0.3;
     this.hemi = new THREE.HemisphereLight(0xb8c4ff, 0x9a8a78, 1.0); this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xe8e4ff, 1.4); this.sun.castShadow = true; this.sun.shadow.mapSize.set(this.quality.shadow, this.quality.shadow); const sc = this.sun.shadow.camera; const R = mobile ? 26 : 34; sc.left = -R; sc.right = R; sc.top = R; sc.bottom = -R; sc.near = 1; sc.far = 160; this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.05; this.scene.add(this.sun, this.sun.target);
     this.fill = new THREE.DirectionalLight(0xaab8ff, 0.5); this.fill.position.set(-0.6, 0.4, 0.8); this.scene.add(this.fill);
@@ -37,6 +38,8 @@ export class Game {
     this.input = new Input(canvas); this.rig = new CameraRig(this.camera); this.audio = new AudioManager();
     addEventListener('resize', () => this.resize()); this.resize();
   }
+  /** swap the studio environment for the Poly Haven sunrise sky once assets have loaded */
+  useAssets() { if (Assets.env) { this.scene.environment = this.pmrem.fromEquirectangular(Assets.env).texture; } }
   resize() { const w = innerWidth, h = innerHeight; this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w / h < 0.8 ? 62 : 52; this.camera.updateProjectionMatrix(); this.rig.fov = this.camera.fov; }
   build(progress) {
     Progress.load(); const before0 = new Set(this.scene.children);

@@ -5,6 +5,7 @@ import { beamMaterial } from '../gfx/Shaders.js';
 import { Tex } from '../gfx/Textures.js';
 import { clamp, damp, lerp, TAU, rng, smoothstep } from '../core/Utils.js';
 import { lathe } from '../characters/Rig.js';
+import { Assets } from '../gfx/Assets.js';
 
 const glow = (c, i = 1.5) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.4 });
 
@@ -80,7 +81,7 @@ export class SunMirror {
 export class IceBlock {
   constructor(pos, size = 1) {
     this.pos = pos.clone().add(new THREE.Vector3(0, 1.4 * size, 0)); this.radius = 1.6 * size; this.melt = 0; this.frozen = true; this.group = new THREE.Group(); this.group.position.copy(pos); this.size = size;
-    const mat = new THREE.MeshStandardMaterial({ color: 0xbfeaff, roughness: 0.08, metalness: 0.0, transparent: true, opacity: 0.74, emissive: 0x4ab0e0, emissiveIntensity: 0.18, flatShading: true });
+    const it = Assets.tex; const mat = new THREE.MeshStandardMaterial({ color: 0xcfeeff, roughness: 0.12, metalness: 0.0, transparent: true, opacity: 0.78, emissive: 0x4ab0e0, emissiveIntensity: 0.14, flatShading: true, map: it.iceColor || null, normalMap: it.iceNormal || null, roughnessMap: it.iceRough || null });
     this.mat = mat; this.ice = new THREE.Group(); this.group.add(this.ice);
     const r = rng(9); for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), mat); m.scale.set((0.9 + r() * 0.5) * size, (1.0 + r() * 1.1) * size, (0.9 + r() * 0.5) * size); m.position.set((r() - 0.5) * 2.2 * size, m.scale.y * 0.85, (r() - 0.5) * 1.4 * size); m.rotation.set(r() * 0.5, r() * 3, r() * 0.5); m.castShadow = true; this.ice.add(m); }
     const m2 = new THREE.Mesh(new THREE.OctahedronGeometry(1.3 * size, 0), mat); m2.scale.set(1.4, 1.5, 1.2); m2.position.y = 1.5 * size; m2.castShadow = true; this.ice.add(m2);

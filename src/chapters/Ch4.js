@@ -4,6 +4,7 @@ import { ChapterBase } from '../world/ChapterBase.js';
 import { DiscSurface } from '../world/Terrain.js';
 import { Parts, mesh, vcMat, tube } from '../world/Build.js';
 import * as Flora from '../world/Flora.js';
+import { SETS } from '../world/AssetSets.js';
 import * as Props from '../world/Props.js';
 import { SunMirror, Lift } from '../world/PuzzleProps.js';
 import { Cloud } from '../weather/Cloud.js';
@@ -70,6 +71,7 @@ export class FactoryWorld extends ChapterBase {
     const jp = new Parts(); const jc = [0xffd35a, 0x7fc8ff, 0xe8f4ff, 0xc8a0ff, 0xa0e8c0, 0xff9a6a]; for (let i = 0; i < 6; i++) { const x = -22 + i * 1.5, z = 14, y = F.heightAt(x, z); jp.add(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 10), jc[i], { p: [x, y + 0.6, z] }); jp.add(new THREE.CylinderGeometry(0.4, 0.45, 0.2, 10), 0xc6a05a, { p: [x, y + 1.3, z] }); }
     const jm = mesh(jp.merge(), vcMat({ roughness: 0.2, metalness: 0.1 })); jm.castShadow = false; scene.add(jm);
     scene.add(Flora.scatterGrass(F, this.q, [], { density: 0.6, a: 0x6a6a70, b: 0x8a8a70, flowers: [0xe8b830] }));
+    Flora.scatterClutter(scene, terrain, F, 12, 801, [[0, 0, 19], [0, 21, 4]].concat(terrain.colliders.map((c) => [c.x, c.z, c.r + 1])), [SETS.dead(), SETS.rustRock(), SETS.rustRock()]);
   }
   gear(x, y, z, s) { const p = new Parts(); p.add(new THREE.CylinderGeometry(1.2 * s, 1.2 * s, 0.4 * s, 16), 0x8a6a50, {}); for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; p.add(new THREE.BoxGeometry(0.5 * s, 0.4 * s, 0.5 * s), 0x8a6a50, { p: [Math.cos(a) * 1.35 * s, 0, Math.sin(a) * 1.35 * s], r: [0, -a, 0] }); } const m = mesh(p.merge(), vcMat({ metalness: 0.6, roughness: 0.5, flatShading: true })); m.position.set(x, y, z); m.rotation.x = Math.PI / 2; this.scene.add(m); return { m, s, spin: (Math.random() > 0.5 ? 1 : -1) * (0.4 + Math.random() * 0.3) }; }
   rods_() {

@@ -4,6 +4,8 @@ import { ChapterBase } from '../world/ChapterBase.js';
 import { DiscSurface } from '../world/Terrain.js';
 import { Parts, mesh, vcMat, tube } from '../world/Build.js';
 import * as Flora from '../world/Flora.js';
+import { SETS } from '../world/AssetSets.js';
+import { Wildlife } from '../characters/Wildlife.js';
 import * as Props from '../world/Props.js';
 import { BloomPlant } from '../world/PuzzleProps.js';
 import { Puffkin } from '../characters/Creatures.js';
@@ -111,9 +113,10 @@ export class VillageWorld extends ChapterBase {
   }
   decor() {
     const { V, scene, terrain, q } = this, r = rng(33); const av = [[4, 4, 6], [-12, -14, 5], [15, -9, 3], [-13, 8, 3], [-3, 16, 3], [17, 8, 3], [-19, -1, 3], [10, -17, 3], [-8, 21, 3], [22, 0, 3], [-8, -12, 4.5], [-17, -9, 4], [-16, -20, 4.5], [0.5, 9.2, 2], [6, 10.8, 2], [11.8, 8.2, 2.5]];
-    this.scatterTrees(V, 11, 71, av, [Flora.cloudcapTree, Flora.umbrellaPine]);
-    for (let i = 0; i < 26; i++) { const th = r() * TAU, rho = 6 + r() * 20, x = Math.cos(th) * rho, z = Math.sin(th) * rho, y = V.heightAt(x, z); if (y === -Infinity || V.nearEdge(x, z) > 0.9 || av.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.5) ** 2)) continue; const k = i % 4; const o = k === 0 ? Flora.spotMushroom(30 + i, 0.9 + r() * 0.9, [0xd8505a, 0xe89a3c, 0xb06ad8, 0x4aa8a0][i % 4]) : k === 1 ? Flora.crookFern(40 + i) : k === 2 ? Flora.pillowMoss(50 + i, 1 + r()) : Flora.rock(60 + i, 1 + r()); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k !== 1) terrain.addCollider({ x, z, r: 0.5 }); }
+    this.scatterTrees(V, 11, 71, av, [Flora.cloudcapTree, SETS.autumn(), SETS.autumn()]);
+    for (let i = 0; i < 26; i++) { const th = r() * TAU, rho = 6 + r() * 20, x = Math.cos(th) * rho, z = Math.sin(th) * rho, y = V.heightAt(x, z); if (y === -Infinity || V.nearEdge(x, z) > 0.9 || av.some((a) => (x - a[0]) ** 2 + (z - a[1]) ** 2 < (a[2] + 0.5) ** 2)) continue; const k = i % 4; const o = k === 0 ? Flora.spotMushroom(30 + i, 0.9 + r() * 0.9, [0xd8505a, 0xe89a3c, 0xb06ad8, 0x4aa8a0][i % 4]) : k === 1 ? Flora.crookFern(40 + i) : k === 2 ? Flora.pillowMoss(50 + i, 1 + r()) : SETS.rock('autumn')(60 + i, 1 + r() * 0.5); o.position.set(x, y - 0.03, z); o.rotation.y = r() * 6; scene.add(o); if (k !== 1) terrain.addCollider({ x, z, r: 0.5 }); }
     const rf = new Props.RisingFall(scene, -22, V.heightAt(-22, 14) + 0.3, 14, { height: 26, radius: 1.3, quality: q, seed: 4 }); this.risingFalls.push(rf); this.cloudRefill.push(rf.top); terrain.addCollider({ x: -22, z: 14, r: 4.2 });
+    Flora.scatterClutter(scene, terrain, V, 14, 601, av.map((a) => [a[0], a[1], a[2] + 1]).concat(terrain.colliders.map((c) => [c.x, c.z, c.r + 0.5])), [SETS.bush('autumn'), SETS.flowers('autumn'), SETS.stump()], { collide: false });
     scene.add(Flora.scatterGrass(V, q, av.map((a) => [a[0], a[1], a[2] + 0.5]).concat(terrain.colliders.filter((c) => Math.hypot(c.x, c.z) < 28).map((c) => [c.x, c.z, c.r + 0.2])), { density: 5, a: 0x4f9a8c, b: 0xa4d4a0, flowers: [0xffffff, 0x9fe8ff, 0xffd05a, 0xff9fd0] }));
   }
   cast() {
@@ -127,6 +130,7 @@ export class VillageWorld extends ChapterBase {
     this.glints.push(this.glint(-16 + 2.4, this.balconyPos.y + 0.9, -20 + 1, 'c2b', 'Balcony memory'));
     // garden: 3 blooms near Granny's shell patch
     this.blooms = []; [[16, 14], [18.2, 11.4], [14.6, 15.8]].forEach(([x, z], i) => { const parts = Flora.lanternbloom(); const b = new BloomPlant(parts, new THREE.Vector3(x, V.heightAt(x, z), z), i); this.scene.add(b.group); b.pos.set(x, V.heightAt(x, z) + 1.2, z); b.radius = 1.4; this.weather.register(b); this.blooms.push(b); this.updaters.push((dt, t) => b.update(dt, t)); terrain.addCollider({ x, z, r: 0.3 }); });
+    this.wild = []; { const w = new Wildlife(this.scene, terrain, 'Fox', 18, 18, { height: 0.75, roam: 5 }); if (w.ok) { this.wild.push(w); this.weather.register({ get pos() { return w.pos; }, radius: 0.8, weather: (dt, ww) => w.weather(dt, ww) }); this.updaters.push((dt) => w.update(dt, this.game.player)); } }
     for (let i = 0; i < 3; i++) { const [x, z] = [[-1, 3], [11, 6], [-4, -6]][i]; const p = new Puffkin(new THREE.Vector3(x, V.heightAt(x, z), z), 300 + i, terrain); this.scene.add(p.group); this.weather.register(p); this.puffkins.push(p); this.updaters.push((dt, t) => p.update(dt, t, this.game.player, this.game.companion)); }
   }
   puzzleBits() {
