@@ -15,6 +15,7 @@ export class ChapterNarr {
   init() { this.game.ui.setGlints(Progress.data.memories.filter((x) => x.startsWith('c' + this.no)).length); for (const gl of this.game.world.glints || []) if (Progress.hasMemory(gl.id)) { gl.got = true; gl.group.visible = false; } }
   /** re-apply saved puzzle progress to the freshly built world (overridden per chapter) */
   applySaved() {}
+  hintFor() { return this.hints?.[this.step] || this.game.ui.q('#objText')?.textContent || null; }
   stepChanged() { this.hintT = 0; this.save(); }
   save() { Progress.data.flags['ch' + this.no] = { ...this.flags }; Progress.save(); }
   restore() { const f = Progress.data.flags['ch' + this.no]; if (f) Object.assign(this.flags, f); }

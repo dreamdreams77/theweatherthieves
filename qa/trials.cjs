@@ -8,12 +8,12 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   // --- Ask Fen (H key and HUD button)
   await page.keyboard.press('KeyH'); await sleep(150);
   const hint1 = await ev(() => [...document.querySelectorAll('#barks .bark.fen')].map((b) => b.textContent).pop() || '');
-  check('H asks Fen for an in-character hint about the current goal', /cloud|Gertrude|grab|rain/i.test(hint1), hint1.slice(0, 120));
+  check('H asks Fen for an in-character hint about the current goal', /Press 1|grey cloud/i.test(hint1), hint1.slice(0, 120));
   await page.click('#askFen'); await sleep(150); check('Ask Fen HUD button works', (await ev(() => document.querySelectorAll('#barks .bark.fen').length)) >= 2);
   // --- trial stone near spawn; walk up and press F
   const st = await ev(() => { const g = __game, s = g.trials.stonePos; g.player.pos.set(s.x + 1.6, g.terrain.topAt(s.x + 1.6, s.z) + 0.05, s.z); g.player.vel.set(0, 0, 0); g.sim(0.3); return !!s && Math.hypot(s.x - 3, s.z - 8); });
   check('trial stone stands near the chapter spawn', st && st < 12, String(st));
-  await page.keyboard.press('KeyF'); await sleep(200); const intro = await ev(() => __game.ui.dlg.active && document.getElementById('dlg').textContent); await flush(); await sleep(200);
+  await page.keyboard.press('KeyF'); await sleep(200); const intro = await ev(() => __game.ui.dlg.active && __game.ui.dlg.lines.map((l) => l.text).join(' ')); await flush(); await sleep(200);
   const a = await ev(() => { const A = __game.trials.active; return A && { n: A.targets.length, types: A.targets.map((t) => t.type).sort().join(','), hud: document.getElementById('trialHud').classList.contains('show') }; });
   check('F at the stone: Fen explains, then the Bloom Rush starts', !!intro && /Bloom Rush/.test(intro) && a && a.n === 6 && a.types === 'rain,rain,rain,rain,wind,wind' && a.hud, JSON.stringify(a));
   await sleep(3300); check('3-second countdown, then the clock runs', await ev(() => __game.trials.active.count <= 0 && __game.trials.active.t > 0));
