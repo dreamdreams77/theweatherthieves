@@ -101,7 +101,7 @@ export class ForestWorld extends ChapterBase {
     this.mirror = new SunMirror(scene, new THREE.Vector3(-9, ly, -52), this.weather, terrain); scene.add(this.mirror.group); this.mirror.yaw = -1.6; this.mirrors.push(this.mirror); terrain.addCollider({ x: -9, z: -52, r: 1.1, y0: ly - 1, y1: ly + 4 });
     this.sled = new Sled(scene, terrain, new THREE.Vector3(-1, ly, -50));
     const sledReact = { pos: this.sled.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), radius: 1.5, weather: (dt, w) => this.sled.weather(dt, w) }; this.weather.register(sledReact); this.sledReact = sledReact;
-    this.ice = new IceBlock(new THREE.Vector3(-1, ly, -50), 0.95); scene.add(this.ice.group); this.weather.register(this.ice); this.ice.onMelt = () => { this.sled.locked = false; }; this.updaters.push((dt, t) => this.ice.update(dt, t, this.weather));
+    this.ice = new IceBlock(new THREE.Vector3(-1, ly, -50), 0.95); scene.add(this.ice.group); this.weather.register(this.ice); this.ice.onMelt = () => { this.sled.locked = false; }; this.sunTargets = [this.ice]; this.updaters.push((dt, t) => this.ice.update(dt, t, this.weather));
     this.plate = new PressurePlate(new THREE.Vector3(7, ly, -50)); scene.add(this.plate.group);
     // gate and jar plaza
     const gx = 12, gz = -50, gyy = gy(gx, gz) + 1.0; const gp = new Parts(); for (const s of [-1, 1]) for (let i = 0; i < 4; i++) gp.add(new THREE.BoxGeometry(1.1, 1.2, 1.1), 0xb8c0d0, { p: [0, 0.6 + i * 1.15, s * 2.6], jitter: 0.2 }); for (let i = 0; i < 9; i++) { const a = (i / 8) * Math.PI; gp.add(new THREE.BoxGeometry(0.9, 0.9, 1.1), 0xc8d0dc, { p: [0, 4.6 + Math.sin(a) * 1.4, Math.cos(a) * 2.6], r: [a - Math.PI / 2, 0, 0] }); }

@@ -109,7 +109,7 @@ export class SunkenSky extends ChapterBase {
     this.gate = new SunGate(new THREE.Vector3(-29.8, this.on(B, -29.8, -27.5), -27.5), 2.65, terrain); scene.add(this.gate.group); this.updaters.push((dt, t) => this.gate.update(dt, t));
     const gx = -29.8 + Math.sin(2.65) * -2.4, gz = -27.5 + Math.cos(2.65) * -2.4;
     this.ice = new IceBlock(new THREE.Vector3(gx + 0.2, this.on(B, gx, gz), gz), 1.15); scene.add(this.ice.group); this.ice.pos.set(gx, this.on(B, gx, gz) + 1.4, gz); weather.register(this.ice); terrain.addCollider({ x: gx, z: gz, r: 1.6 }); this.iceCollider = terrain.colliders[terrain.colliders.length - 1];
-    this.updaters.push((dt, t) => this.ice.update(dt, t, weather));
+    this.updaters.push((dt, t) => this.ice.update(dt, t, weather)); this.sunTargets = [this.ice];
     // ruined statue of the first Weather Keeper
     const sp = new Parts(); sp.add(new THREE.CylinderGeometry(1.1, 1.3, 0.8, 8), 0xa59cae, { p: [0, 0.4, 0], jitter: 0.2 }); sp.add(new THREE.CylinderGeometry(0.5, 0.8, 2.2, 8), 0xb3aabb, { p: [0, 1.9, 0], jitter: 0.2 }); sp.add(new THREE.SphereGeometry(0.45, 12, 10), 0xb3aabb, { p: [0, 3.3, 0] });
     sp.add(new THREE.CylinderGeometry(0.13, 0.13, 1.5, 6), 0xb3aabb, { p: [0.6, 3.0, 0.4], r: [0.3, 0, -0.9] }); sp.add(new THREE.CylinderGeometry(0.4, 0.4, 0.7, 10, 1, true), 0x9fe8ff, { p: [1.3, 3.5, 0.9] }); sp.add(new THREE.SphereGeometry(0.5, 8, 6, 0, TAU, 0, 1.2), 0x7bc487, { p: [-0.3, 3.7, 0], s: [1.2, 0.6, 1.2] });

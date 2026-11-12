@@ -83,7 +83,9 @@ export class Tools {
     this.sunUsing = false; const m = (g.world.mirrors || []).reduce((b, mm) => (!b || Math.hypot(mm.pos.x - p.pos.x, mm.pos.z - p.pos.z) < Math.hypot(b.pos.x - p.pos.x, b.pos.z - p.pos.z) ? mm : b), null);
     if (m && tool === 'sun' && useDown && g.world.mirrorActive !== false) {
       const dm = Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z);
-      if (dm < 30) { const yaw = Math.atan2(aim.point.x - m.pos.x, aim.point.z - m.pos.z); let d = yaw - m.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); m.yaw += d * Math.min(1, dt * 3.5); this.sunUsing = true; p.facing = Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z); p.juno.aim('R', _v.set(Math.sin(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw), 0.5, Math.cos(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw)).normalize()); p.setExpr('excited', 0.25); }
+      // aim assist: snap the beam onto a nearby sun target (ice etc.) when the cursor is close to it
+      let tp = aim.point; for (const st of (g.world.sunTargets || [])) { if (st.frozen === false) continue; if (Math.hypot(st.pos.x - aim.point.x, st.pos.z - aim.point.z) < 3.8) tp = st.pos; }
+      if (dm < 30) { const yaw = Math.atan2(tp.x - m.pos.x, tp.z - m.pos.z); let d = yaw - m.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); m.yaw += d * Math.min(1, dt * 3.5); this.sunUsing = true; p.facing = Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z); p.juno.aim('R', _v.set(Math.sin(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw), 0.5, Math.cos(Math.atan2(m.pos.x - p.pos.x, m.pos.z - p.pos.z) - p.yaw)).normalize()); p.setExpr('excited', 0.25); }
       else if (useJust) g.ui.toast('Get closer to the sun mirror to aim it.');
     }
     if (m && tool === 'sun' && (input.keys.has('KeyQ') || input.keys.has('KeyE') || input.stretchHeld)) { const dm = Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z); if (dm < 30) m.yaw += ((input.keys.has('KeyE') || input.stretchHeld > 0 ? -1 : 1) * dt * 1.2); }
