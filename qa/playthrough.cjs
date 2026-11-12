@@ -69,7 +69,8 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   check('Gertrude released away from the mirror', (await S()).held === null); await sleep(2500);
   check('mirror unshaded after moving Gertrude', await ev(() => __game.world.mirror.shaded === null && __game.world.mirror.lit > 0.8), 'lit=' + (await ev(() => __game.world.mirror.lit)).toFixed(2));
   await flush(); await press('Digit4'); const ice = await ev(() => { const i = __game.world.ice.pos; return [i.x, i.y - 1.4, i.z]; }); // aim at the ice's base on the ground, like a player would
-  await holdAt(ice, () => __game.world.ice.melt >= 1, 45000); check('ice melted with sunlight (Sun tool + mouse)', await ev(() => __game.world.ice.melt >= 1), 'melt=' + (await ev(() => __game.world.ice.melt)).toFixed(2));
+  await holdAt(ice, () => __game.world.ice.melt >= 1, 45000); if (process.env.DBG) console.log('icedbg', JSON.stringify(await ev(() => { const g = __game, w = g.world, a = g.tools.aim; return { tool: g.tools.tool, aimType: a.hitType, aim: a.point.toArray().map((x) => +x.toFixed(1)), ice: w.ice.pos.toArray().map((x) => +x.toFixed(1)), yaw: +w.mirror.yaw.toFixed(2), lit: +w.mirror.lit.toFixed(2), shaded: w.mirror.shaded?.name || null, p: g.player.pos.toArray().map((x) => +x.toFixed(1)), held: g.tools.held?.id || null, state: g.state, gert: w.gertrude.pos.toArray().map((x) => +x.toFixed(1)) }; })));
+  check('ice melted with sunlight (Sun tool + mouse)', await ev(() => __game.world.ice.melt >= 1), 'melt=' + (await ev(() => __game.world.ice.melt)).toFixed(2));
   await until(() => __game.world.gate.open > 0.9, 8000); await flush(); await shot(page, OUT + 'play-04-sun-gate-open.png'); check('Sun Gate open', await ev(() => __game.world.gate.open > 0.9));
   // ---- 5. to Windmill Rise
   const gate = await ev(() => { const g = __game.world.gate; return g.pos.toArray(); });
