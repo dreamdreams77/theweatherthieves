@@ -55,7 +55,7 @@ export class SunkenSky extends ChapterBase {
   }
   // ---------------------------------------------------------------- HOME
   buildHome() {
-    const { H, scene, terrain, weather, q } = this; const avoid = [[-6, 4, 3.2], [7.5, -3, 4], [-3, -8, 4.2], [0, 8, 2.5], [-11, -6, 2], [11, 5, 2.8]];
+    const { H, scene, terrain, weather, q } = this; const avoid = [[-6, 4, 3.2], [7.5, -3, 4], [-3, -8, 4.2], [0, 8, 2.5], [-11, -6, 2], [11, 5, 2.8], [2, 6, 6], [-6, -2, 3]];
     const cot = Props.cottage(); this.place(cot, H, -6.5, 4, 0.7, 1, 0); terrain.addCollider({ x: -6.5, z: 4, r: 2.6, y0: -2, y1: 10, cam: { r: 2.7, y0: this.on(H, -6.5, 4) - 1, y1: this.on(H, -6.5, 4) + 8 } }); this.cottage = cot;
     this.smokePos = new THREE.Vector3(-6.5, 0, 4).add(cot.userData.smoke.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.7)); this.smokePos.y += H.heightAt(-6.5, 4);
     this.updaters.push((dt, t) => { cot.userData.anemometer.rotation.y += dt * (1 + weather.force(this.smokePos).length() * 1.6); });

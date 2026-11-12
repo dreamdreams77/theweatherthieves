@@ -1,8 +1,8 @@
 import * as Flora from './Flora.js';
 /** Which CC0 models each biome uses (recoloured per chapter palette). */
 export const SETS = {
-  common: (pal = 'soft') => Flora.qtree(['CommonTree_1', 'CommonTree_3'], 4.5, 7, pal),
-  birch: (pal = 'soft') => Flora.qtree(['BirchTree_1', 'BirchTree_3'], 5, 7.5, pal),
+  common: (pal = 'soft') => Flora.qtree(['CommonTree_1', 'CommonTree_3'], 4, 6, pal),
+  birch: (pal = 'soft') => Flora.qtree(['BirchTree_1', 'BirchTree_3'], 4, 5.8, pal),
   willow: (pal = 'meadow') => Flora.qtree(['Willow_2'], 4.5, 6.5, pal),
   pine: (pal = 'soft') => Flora.qtree(['PineTree_1', 'PineTree_3'], 5, 8, pal, Flora.umbrellaPine),
   autumn: () => Flora.qtree(['CommonTree_Autumn_1', 'CommonTree_Autumn_3', 'BirchTree_Autumn_2'], 4.5, 7, 'autumn'),
