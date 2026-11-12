@@ -91,7 +91,7 @@ export function lanternbloom() {
 
 /** CC0 model factories: pick one of `names`, recolour with `pal`, size it between hMin..hMax metres. */
 export function qtree(names, hMin, hMax, pal = 'soft', fallback = cloudcapTree, trunk = 0.07) {
-  return (seed) => { const r = rng(seed * 3 + 7), n = names[(r() * names.length) | 0], h = hMin + r() * (hMax - hMin); const m = Assets.mesh(n, pal, h, true); if (!m) return fallback(seed); m.userData.trunkR = Math.max(0.25, trunk * h * 2.2); m.userData.canopy = m.userData.width * 0.5; return m; };
+  return (seed) => { const r = rng(seed * 3 + 7), n = names[(r() * names.length) | 0], h = hMin + r() * (hMax - hMin); const m = Assets.mesh(n, pal, h, true); if (!m) return fallback(seed); m.userData.trunkR = 0.3 + h * 0.015; m.userData.canopy = m.userData.width * 0.5; return m; };
 }
 export function qprop(names, hMin, hMax, pal = 'soft', sway = false, fallback = rock) {
   return (seed, s = 1) => { const r = rng(seed * 5 + 3), n = names[(r() * names.length) | 0], h = (hMin + r() * (hMax - hMin)) * s; const m = Assets.mesh(n, pal, h, sway); if (!m) return fallback(seed, s); m.userData.trunkR = m.userData.width * 0.4; return m; };
