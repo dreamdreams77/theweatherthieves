@@ -61,8 +61,8 @@ export class UI {
       <div id="chapterCard"><div class="cc-no"></div><div class="cc-t"></div></div>
       <div id="album" class="overlay hidden"><div class="card wide"><h2>Weather memories</h2><div id="albumGrid"></div><h2>Weather almanac</h2><div id="almanac"></div><button id="albumClose" class="btn">Close</button></div></div>
       <div id="touch" class="hidden">
-        <div id="stick"><i id="knob"></i></div>
-        <div id="tbtns"><button id="bUse" class="tb big">USE</button><button id="bJump" class="tb">Jump</button><button id="bMinus" class="tb sm">−</button><button id="bPlus" class="tb sm">+</button><button id="bTalk" class="tb sm">Talk</button></div>
+        <div id="stick" aria-label="Move"><div id="stickBase"><i id="knob"></i></div></div>
+        <div id="tbtns"><button id="bUse" class="tb big" aria-label="Use tool"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.2 6.1 6.3.4-4.9 4 1.6 6.2L12 15.7 6.8 19.2l1.6-6.2-4.9-4 6.3-.4z"/></svg><span>Use</span></button><button id="bJump" class="tb" aria-label="Jump"><svg viewBox="0 0 24 24"><path d="M12 4l7 7.5h-4.3V20H9.3v-8.5H5z"/></svg><span>Jump</span></button><button id="bMinus" class="tb sm" aria-label="Squash cloud"><svg viewBox="0 0 24 24"><path d="M3 12h6M21 12h-6M7 9l3 3-3 3M17 9l-3 3 3 3" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="bPlus" class="tb sm" aria-label="Stretch cloud"><svg viewBox="0 0 24 24"><path d="M9 12H3M15 12h6M6 9l-3 3 3 3M18 9l3 3-3 3" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="bTalk" class="tb sm" aria-label="Talk"><svg viewBox="0 0 24 24"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-8.5L7 20.5v-4H4A1.5 1.5 0 0 1 2.5 15V7A1.5 1.5 0 0 1 4 5.5z"/></svg></button></div>
       </div>`;
     this.q = (s) => this.root.querySelector(s);
     this.tools = [...this.root.querySelectorAll('.tool')]; this.tools.forEach((b) => b.addEventListener('click', () => game.tools.select(+b.dataset.i)));
@@ -86,18 +86,18 @@ export class UI {
   }
   initTouch() {
     const input = this.game.input, touch = this.q('#touch'); this.touchEl = touch;
-    const stick = this.q('#stick'), knob = this.q('#knob'); let sid = null, cx = 0, cy = 0;
-    const move = (e) => { let dx = e.clientX - cx, dy = e.clientY - cy; const m = Math.hypot(dx, dy), R = 52; if (m > R) { dx *= R / m; dy *= R / m; } knob.style.transform = `translate(${dx}px,${dy}px)`; input.touchMove.set(dx / R, -dy / R); };
-    stick.addEventListener('pointerdown', (e) => { sid = e.pointerId; stick.setPointerCapture(sid); const r = stick.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(e); });
+    // floating thumbstick: the base settles under the thumb wherever it lands in the zone, then springs home when released
+    const stick = this.q('#stick'), base = this.q('#stickBase'), knob = this.q('#knob'); let sid = null, cx = 0, cy = 0;
+    const R = 46, move = (e) => { let dx = e.clientX - cx, dy = e.clientY - cy; const m = Math.hypot(dx, dy); if (m > R) { dx *= R / m; dy *= R / m; } knob.style.transform = `translate(${dx}px,${dy}px) scale(.96)`; base.style.setProperty('--tilt-x', (-dy / R * 8).toFixed(1) + 'deg'); base.style.setProperty('--tilt-y', (dx / R * 8).toFixed(1) + 'deg'); input.touchMove.set(dx / R, -dy / R); };
+    stick.addEventListener('pointerdown', (e) => { sid = e.pointerId; stick.setPointerCapture(sid); const z = stick.getBoundingClientRect(), half = base.offsetWidth / 2; cx = Math.min(z.right - half, Math.max(z.left + half, e.clientX)); cy = Math.min(z.bottom - half, Math.max(z.top + half, e.clientY)); base.style.left = (cx - z.left) + 'px'; base.style.top = (cy - z.top) + 'px'; stick.classList.add('active'); move(e); });
     stick.addEventListener('pointermove', (e) => { if (e.pointerId === sid) move(e); });
-    const end = (e) => { if (e.pointerId === sid) { sid = null; knob.style.transform = ''; input.touchMove.set(0, 0); } }; stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
+    const end = (e) => { if (e.pointerId === sid) { sid = null; knob.style.transform = ''; base.style.left = ''; base.style.top = ''; base.style.removeProperty('--tilt-x'); base.style.removeProperty('--tilt-y'); stick.classList.remove('active'); input.touchMove.set(0, 0); } }; stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
     const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); on(); el.classList.add('on'); }); const o = () => { off?.(); el.classList.remove('on'); }; el.addEventListener('pointerup', o); el.addEventListener('pointercancel', o); };
     hold(this.q('#bUse'), () => { input.useHeld = true; input.tapUse = true; }, () => (input.useHeld = false));
     hold(this.q('#bJump'), () => input.pressedTouch.add('jump'));
     hold(this.q('#bMinus'), () => (input.stretchHeld = -1), () => (input.stretchHeld = 0)); hold(this.q('#bPlus'), () => (input.stretchHeld = 1), () => (input.stretchHeld = 0));
     hold(this.q('#bTalk'), () => this.game.interact());
     input.stretchHeld = 0;
-    this.q('#bUse').textContent = 'USE';
   }
   showTouch(v) { this.touchEl.classList.toggle('hidden', !v); document.body.classList.toggle('touch', v); }
   setTool(i) { this.tools.forEach((b, k) => b.classList.toggle('sel', k === i)); const t = TOOLS[i]; this.q('#toolhint').textContent = t.name + ' — ' + t.hint; this.q('#toolhint').classList.remove('fade'); clearTimeout(this._th); this._th = setTimeout(() => this.q('#toolhint').classList.add('fade'), 5500); }

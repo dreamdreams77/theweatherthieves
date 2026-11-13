@@ -3,8 +3,9 @@ import { std, boilPatch, G } from '../gfx/Mat.js';
 import { Clay } from '../gfx/Clay.js';
 import { clamp, damp, lerp } from '../core/Utils.js';
 
-const outlineMat = new THREE.MeshBasicMaterial({ color: 0x2b1d33, side: THREE.BackSide });
-outlineMat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * 0.018;'); boilPatch(sh); }; // the hull boils with its mesh (same world-space field)
+export const OUTLINE = { w: { value: 0.018 } };
+export const outlineMat = new THREE.MeshBasicMaterial({ color: 0x2b1d33, side: THREE.BackSide });
+outlineMat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * uOutW;').replace('void main() {', 'uniform float uOutW;\nvoid main() {'); sh.uniforms.uOutW = OUTLINE.w; boilPatch(sh); }; // the hull boils with its mesh (same world-space field)
 outlineMat.customProgramCacheKey = () => 'outline_clay';
 /** Add a mesh with an inverted-hull outline (film-style ink line). */
 export function inked(parent, geo, mat, { p = [0, 0, 0], s = [1, 1, 1], r = [0, 0, 0], outline = true, name } = {}) {

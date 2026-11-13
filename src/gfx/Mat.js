@@ -49,7 +49,7 @@ const CLAY_FRAG_PARS = `
 uniform float uClay, uClayFP; varying vec3 vClayP;
 float clayHeight(vec3 p, float px, out float ridge){
   // broad kneading lumps + a finer knuckle-and-palm unevenness
-  float h = (clN(p * 3.1) - 0.5) * 0.04 + (clN(p * 8.5 + 7.0) - 0.5) * 0.01;
+  float h = (clN(p * 2.6) - 0.5) * 0.03 + (clN(p * 7.0 + 7.0) - 0.5) * 0.0035;
   ridge = 0.0;
   const float SP = 0.019;                               // ridge spacing (m): exaggerated so it reads at game scale
   if (uClayFP > 0.5 && px < SP * 0.6) {               // skip the whorls entirely once they would be sub-pixel (most distant pixels)
@@ -64,7 +64,7 @@ float clayHeight(vec3 p, float px, out float ridge){
     float rM = bd * S + (clN(p * 36.0) - 0.5) * 0.007;   // ring radius (m), warped so the whorl is hand-made, not machined
     float aa = 1.0 - smoothstep(SP * 0.22, SP * 0.6, px); // fade the ridges out before they alias
     ridge = (0.5 + 0.5 * cos(rM * 6.2832 / SP + bid * 40.0)) * m * aa;
-    h += ridge * 0.0013 - m * m * 0.01 * (1.0 - smoothstep(SP * 0.3, SP * 0.6, px)); // ridges + the thumb's shallow dent (faded, so the cut-off is seamless)
+    h += ridge * 0.0007 - m * m * 0.008 * (1.0 - smoothstep(SP * 0.3, SP * 0.6, px)); // ridges + the thumb's shallow dent (faded, so the cut-off is seamless)
   }
   return h;
 }
@@ -83,9 +83,10 @@ if (uClay > 0.0 && clDist < 90.0) {
   float clHt = clayHeight(vClayP, clPx, clRidge) * uClay * (1.0 - smoothstep(30.0, 90.0, clDist));
   normal = clayBump(-vViewPosition, normal, vec2(dFdx(clHt), dFdy(clHt)), faceDirection);
   // albedo: uneven kneading blotches, darker grooves in the print, and tiny dust crumbs (all fade out with pixel size)
-  float clB = clN(vClayP * 4.3 + 3.0), clCr = smoothstep(0.82, 0.9, clN(vClayP * 70.0)) * (1.0 - smoothstep(0.004, 0.012, clPx));
-  diffuseColor.rgb *= 1.0 + uClay * ((clB - 0.5) * 0.16 - clRidge * 0.07 - clCr * 0.22);
-  roughnessFactor = clamp(roughnessFactor * (0.9 + 0.2 * clN(vClayP * 6.0)) + clRidge * 0.08 * uClay, 0.04, 1.0);
+  float clB = clN(vClayP * 3.2 + 3.0);
+  diffuseColor.rgb *= 1.0 + uClay * ((clB - 0.5) * 0.07 - clRidge * 0.03);
+  // plasticine is satin: pull every surface toward a soft sheen, with only a whisper of variation
+  roughnessFactor = clamp(mix(roughnessFactor, 0.5, 0.4 * uClay) * (0.96 + 0.08 * clN(vClayP * 5.0)) + clRidge * 0.05 * uClay, 0.08, 1.0);
 }
 `;
 /** Warm sub-surface wrap on the key light's terminator + tiny wet specular glints (the "fresh plasticine" sparkle). */
@@ -97,8 +98,12 @@ if (uClay > 0.0) {
   float clWr = max(0.0, (clNl + 0.55) / 1.55); clWr *= clWr;
   outgoingLight += diffuseColor.rgb * clC * max(0.0, clWr - max(clNl, 0.0)) * vec3(0.32, 0.13, 0.07) * uClay;
   float clNh = max(dot(normal, normalize(clL + normalize(vViewPosition))), 0.0);
-  float clGm = smoothstep(0.6, 0.78, clN(vClayP * 24.0)) * step(0.0, clNl);
-  outgoingLight += clC * pow(clNh, 260.0) * clGm * 0.7 * uClay * (1.0 - metalnessFactor);
+  float clGm = smoothstep(0.68, 0.8, clN(vClayP * 18.0)) * step(0.0, clNl);
+  outgoingLight += clC * pow(clNh, 220.0) * clGm * 0.4 * uClay * (1.0 - metalnessFactor);
+  // soft waxy sheen (broad, low) + light glowing through the thin edges of the clay (warm fresnel)
+  outgoingLight += clC * diffuseColor.rgb * pow(clNh, 14.0) * 0.18 * uClay * (1.0 - metalnessFactor);
+  float clFr = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0);
+  outgoingLight += diffuseColor.rgb * clFr * vec3(0.22, 0.12, 0.08) * uClay;
 }
 #endif
 `;

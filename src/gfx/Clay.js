@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { G } from './Mat.js';
+import { outlineMat, OUTLINE } from '../characters/Rig.js';
 import { Settings } from '../core/Settings.js';
 
 /**
@@ -19,7 +20,9 @@ export function applyClay(game) {
   Clay.on = on; Clay.twos = on && s.twos !== false && !s.reduceMotion;
   G.uClay.value = on ? 1 : 0;
   G.uClayFP.value = on && !mobile ? 1 : 0;
-  G.uBoil.value = on && !s.reduceMotion ? (mobile ? 0.006 : 0.008) : 0;
+  G.uBoil.value = on && !s.reduceMotion ? (mobile ? 0.004 : 0.0055) : 0;
+  // softer, thinner, warmer ink lines in clay mode (plasticine edges, not cel-shaded ink)
+  outlineMat.color.setHex(on ? 0x4a3040 : 0x2b1d33); OUTLINE.w.value = on ? 0.012 : 0.018;
   if (game?.sun && game.sky) game.applyMood(); // applyMood resets the lights and then calls clayMood
 }
 

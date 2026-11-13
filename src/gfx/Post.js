@@ -20,10 +20,10 @@ export class Post {
         void main(){ vec4 c=texture2D(tDiffuse,vUv); vec2 d=vUv-.5; float v=smoothstep(.85,.25,length(d*vec2(1.1,1.))); c.rgb*=mix(1.-uVig,1.,v); c.rgb+=vec3(uWarm,uWarm*.6,0.)*v;
           if (uClay > 0.) {
             float fr=floor(uTime*12.)*step(.0001,uBoil), l=dot(c.rgb,vec3(.299,.587,.114)), sh=1.-smoothstep(0.,.45,l), hi=smoothstep(.45,1.2,l);
-            c.rgb=mix(c.rgb, c.rgb*vec3(.9,.88,1.08)+vec3(.012,.004,.03), sh*.6*uClay);
+            c.rgb=mix(c.rgb, c.rgb*vec3(.9,.88,1.08)+vec3(.012,.004,.03), sh*.4*uClay);
             c.rgb*=mix(vec3(1.), vec3(1.04,1.,.93), hi*uClay);
-            float g=hh(floor(vUv*uRes*.75)+fr*vec2(37.,17.))-.5; c.rgb*=1.+g*.07*uClay;
-            c.rgb*=1.+(hh(vec2(fr,3.7))-.5)*.025*step(.0001,uBoil)*uClay;
+            float g=hh(floor(vUv*uRes*.75)+fr*vec2(37.,17.))-.5; c.rgb*=1.+g*.028*uClay;
+            c.rgb*=1.+(hh(vec2(fr,3.7))-.5)*.01*step(.0001,uBoil)*uClay;
           }
           gl_FragColor=c; }` });
     this.composer.addPass(this.grade); this.composer.addPass(new OutputPass());
