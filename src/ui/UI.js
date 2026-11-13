@@ -46,6 +46,7 @@ export class UI {
       <div id="pause" class="overlay hidden"><div class="card wide pausecard"><h2>Paused</h2>
         <div class="prow"><button id="pResume" class="btn">Resume</button><button id="pRestart" class="btn alt">Restart chapter</button><button id="pHelp" class="btn alt">Controls</button></div>
         <h3>Chapters</h3><div id="pChapters" class="prow"></div>
+        <h3>Puffkin Arcade</h3><div class="prow"><button id="pArcade" class="pill">Play mini games</button></div>
         <h3>Weather trials</h3><div id="pTrials" class="prow trials"></div>
         <h3>Settings</h3>
         <label class="set">Sound volume <input id="sVol" type="range" min="0" max="1" step="0.05"></label>
@@ -54,6 +55,8 @@ export class UI {
         <label class="set"><input id="sText" type="checkbox"> Larger text</label>
         <label class="set"><input id="sInvert" type="checkbox"> Invert camera up/down</label>
         <label class="set"><input id="sFx" type="checkbox"> Glow &amp; film effects (turn off for speed)</label>
+        <label class="set"><input id="sClay" type="checkbox"> Claymation look (thumbprints, 12 fps boil)</label>
+        <label class="set"><input id="sTwos" type="checkbox"> Animate characters "on twos" (stop-motion poses)</label>
       </div></div>
       <div id="chapterCard"><div class="cc-no"></div><div class="cc-t"></div></div>
       <div id="album" class="overlay hidden"><div class="card wide"><h2>Weather memories</h2><div id="albumGrid"></div><h2>Weather almanac</h2><div id="almanac"></div><button id="albumClose" class="btn">Close</button></div></div>
@@ -68,16 +71,17 @@ export class UI {
     this.q('#endClose').addEventListener('click', () => this.q('#end').classList.add('hidden'));
     this.q('#endNext').addEventListener('click', () => { this.q('#end').classList.add('hidden'); game.loadChapter(game.chapterNo + 1); });
     this.q('#askFen').addEventListener('click', () => game.askFen());
+    this.q('#pArcade').addEventListener('click', () => { game.pause(false); game.arcade.openMenu(); });
     this.q('#pauseBtn').addEventListener('click', () => game.pause(!game.paused)); this.q('#pResume').addEventListener('click', () => game.pause(false));
     this.q('#pHelp').addEventListener('click', () => { this.q('#help').classList.remove('hidden'); });
     this.q('#pRestart').addEventListener('click', () => { if (!confirm('Restart this chapter from the beginning?')) return; Progress.data.flags['ch' + game.chapterNo] = null; if (game.chapterNo === 1) { try { localStorage.removeItem('weather-thieves-save-v1'); } catch {} } Progress.save(); game.pause(false); game.loadChapter(game.chapterNo); });
     const S = Settings.data, bind = (id, key, ev = 'input', get = (el) => +el.value) => { const el = this.q(id); if (el.type === 'checkbox') el.checked = !!S[key]; else el.value = S[key]; el.addEventListener(ev, () => { S[key] = el.type === 'checkbox' ? el.checked : get(el); Settings.save(); game.applySettings(); }); };
-    bind('#sVol', 'volume'); bind('#sMusic', 'music'); bind('#sMotion', 'reduceMotion', 'change'); bind('#sText', 'bigText', 'change'); bind('#sInvert', 'invertY', 'change'); { const fx = this.q('#sFx'); fx.checked = S.fx ?? !game.quality.mobile; fx.addEventListener('change', () => { S.fx = fx.checked; Settings.save(); game.applySettings(); }); }
+    bind('#sVol', 'volume'); bind('#sMusic', 'music'); bind('#sMotion', 'reduceMotion', 'change'); bind('#sText', 'bigText', 'change'); bind('#sInvert', 'invertY', 'change'); bind('#sClay', 'clay', 'change'); bind('#sTwos', 'twos', 'change'); { const fx = this.q('#sFx'); fx.checked = S.fx ?? !game.quality.mobile; fx.addEventListener('change', () => { S.fx = fx.checked; Settings.save(); game.applySettings(); }); }
     addEventListener('keydown', (e) => { if ((e.code === 'Escape' || e.code === 'KeyP') && game.state !== 'title' && game.state !== 'loading' && this.q('#help').classList.contains('hidden') && this.q('#album').classList.contains('hidden')) { e.preventDefault(); game.pause(!game.paused); } });
     this.q('#memBtn').addEventListener('click', () => { this.refreshMemories(); this.q('#album').classList.remove('hidden'); }); this.q('#albumClose').addEventListener('click', () => this.q('#album').classList.add('hidden'));
     this.dlg = { lines: [], i: 0, typing: false, text: '', pos: 0, onEnd: null, onLine: null, active: false };
     const adv = () => this.advance(); this.q('#dlg').addEventListener('pointerdown', (e) => { e.stopPropagation(); adv(); });
-    addEventListener('keydown', (e) => { if ((e.code === 'Enter' || e.code === 'KeyF' || e.code === 'Space') && this.dlg.active) { e.preventDefault(); adv(); } if (e.code === 'Escape') this.q('#help').classList.add('hidden'); if (e.code === 'KeyH' && game.state === 'play' && !game.paused) game.askFen(); });
+    addEventListener('keydown', (e) => { if ((e.code === 'Enter' || e.code === 'KeyF' || e.code === 'Space') && this.dlg.active && !game.paused) { e.preventDefault(); adv(); const code = e.code; queueMicrotask(() => { game.input.pressed.delete(code); game.input.keys.delete(code); }); } if (e.code === 'Escape') this.q('#help').classList.add('hidden'); if (e.code === 'KeyH' && game.state === 'play' && !game.paused) game.askFen(); });
     this.setTool(0); this.initTouch();
   }
   initTouch() {

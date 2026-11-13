@@ -145,7 +145,7 @@ export class FactoryNarr extends ChapterNarr {
     { who: 'fen', ex: 'worried', text: 'Lightning. From a cloud. That we have to carry. With a mouse.' },
     { who: 'juno', ex: 'excited', text: 'Squash a cloud until it crackles, then park it over a copper rod! Three rods, three charges!' }]); }
   openDoor() { const g = this.game, w = g.world; if (this.flags.door) return; this.flags.door = true; w.doorOpen = true; w.doorCol.forEach((c) => (c.enabled = false)); g.audio.sfx('finale'); g.shake(0.6); g.setRestore(0.5); g.weather.bolt(new THREE.Vector3(0, 30, -12), new THREE.Vector3(0, 6, -12)); this.save();
-    setTimeout(() => { w.wren.root.visible = true; this.say([{ who: 'narrator', text: 'The Great Engine door ground open. Inside, a small figure in a patched kite-cape stood very still beside an enormous jar.' },
+    setTimeout(() => { if (this.game.narr !== this) return; w.wren.root.visible = true; this.say([{ who: 'narrator', text: 'The Great Engine door ground open. Inside, a small figure in a patched kite-cape stood very still beside an enormous jar.' },
       { who: 'wren', ex: 'worried', text: 'I only borrowed it. It was so lonely out there.' }, { who: 'juno', ex: 'surprised', text: 'You are Wren. You took the weather — all of it?' },
       { who: 'wren', ex: 'sad', text: 'After the old keeper left, nobody looked up anymore. The sky forgot us, so I kept it safe. I built the Factory to remember every weather. ...Do you ever feel the sky forgot you?' },
       { who: 'fen', ex: 'sad', anim: 'sigh', text: 'I do. I was her student too. I quit when she died, and I let the forecasts go quiet. That is my fault as much as yours.' },
@@ -168,7 +168,7 @@ export class FactoryNarr extends ChapterNarr {
     const g = this.game, w = g.world, f = this.flags; if (f.freed) return; f.freed = true; w.jarOpen = true; w.lid.userData.v = 10; g.setRestore(1); g.palette = { fogA: 0xb8c8e8, fogB: 0xffe0c0, tint: 0x888888, tintAmt: 0, density: [0.006, 0.005] }; g.applyMood(); g.audio.sfx('finale'); g.shake(0.5); g.weather.burst(w.jarPos.clone().add(new THREE.Vector3(0, 4, 0)), 0xffffff, 120, 10, 2.4); g.weather.ambient = 'snow';
     for (let i = 0; i < 5; i++) setTimeout(() => g.weather.bolt(new THREE.Vector3(w.jarPos.x + (Math.random() - 0.5) * 10, 24, w.jarPos.z - 4), new THREE.Vector3(w.jarPos.x + (Math.random() - 0.5) * 10, 3, w.jarPos.z - 4), 0xfff0a0), i * 400); this.memory('c4e');
     g.shot({ pos: w.jarPos.clone().add(new THREE.Vector3(-11, 7, 12)), look: w.jarPos.clone().add(new THREE.Vector3(0, 5, 0)) }, 30);
-    setTimeout(() => this.say([{ who: 'narrator', text: 'Sunshine and rain met above the Great Jar — and the whole sky exhaled.' },
+    setTimeout(() => this.game.narr === this && this.say([{ who: 'narrator', text: 'Sunshine and rain met above the Great Jar — and the whole sky exhaled.' },
       { who: 'wren', ex: 'excited', text: 'They are going home! Sun to the Sunken Sky, rain to the village, snow to the forest — all of them, all at once!' },
       { who: 'gus', ex: 'happy', text: 'THAT WAS THE BEST THUNDER I HAVE EVER HEARD! ...(Wipes eye.) Dust. Machines make dust.' },
       { who: 'fen', ex: 'happy', text: 'Drizzle is raining on me, the sun is on my back and there is snow in my moustache. ...I find I do not mind.' },

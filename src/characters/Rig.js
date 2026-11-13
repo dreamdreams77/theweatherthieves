@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import { std } from '../gfx/Mat.js';
+import { std, boilPatch, G } from '../gfx/Mat.js';
+import { Clay } from '../gfx/Clay.js';
 import { clamp, damp, lerp } from '../core/Utils.js';
 
 const outlineMat = new THREE.MeshBasicMaterial({ color: 0x2b1d33, side: THREE.BackSide });
-outlineMat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * 0.018;'); };
-outlineMat.customProgramCacheKey = () => 'outline';
+outlineMat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * 0.018;'); boilPatch(sh); }; // the hull boils with its mesh (same world-space field)
+outlineMat.customProgramCacheKey = () => 'outline_clay';
 /** Add a mesh with an inverted-hull outline (film-style ink line). */
 export function inked(parent, geo, mat, { p = [0, 0, 0], s = [1, 1, 1], r = [0, 0, 0], outline = true, name } = {}) {
   const m = new THREE.Mesh(geo, mat); m.position.set(...p); m.scale.set(...s); m.rotation.set(...r); m.castShadow = !!outline; if (name) m.name = name;
@@ -102,6 +103,8 @@ export class Biped {
   aim(side, dirLocal) { this.aimDir[side] = dirLocal; }
   /** procedural layer. c: {speed, maxSpeed, grounded, vy, windX, windZ, yawRate} */
   animate(dt, c) {
+    // stop-motion "on twos": re-pose only when the shared 12 fps clock ticks (every rig on the same frame), banking the skipped time
+    if (Clay.twos) { const f = Math.floor(G.uTime.value * Clay.fps); this._tw = (this._tw || 0) + dt; if (f === this._fr) return; this._fr = f; dt = Math.min(this._tw, 0.1); this._tw = 0; }
     const d = this.d, n = this.n; this.t += dt; const t = this.t;
     const sp = c.speed, mv = clamp(sp / (c.maxSpeed || 5), 0, 1.4), ground = c.grounded;
     this.phase += dt * (sp * d.stride + (sp > 0.1 ? 1.5 : 0)) * (ground ? 1 : 0);

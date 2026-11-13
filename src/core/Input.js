@@ -7,7 +7,7 @@ export class Input {
     this.orbit = new THREE.Vector2(); this.zoom = 0; this.pointer = new THREE.Vector2(0, 0); this.pointerPx = new THREE.Vector2();
     this.down = false; this.justDown = false; this.justUp = false; this.rightDown = false; this.touchMode = false; this.useHeld = false; this.hasPointer = false; this.lock = false;
     this.pressedTouch = new Set(); this.drag = new THREE.Vector2();
-    addEventListener('keydown', (e) => { if (e.repeat) return; if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault(); this.keys.add(e.code); this.pressed.add(e.code); });
+    addEventListener('keydown', (e) => { if (e.repeat) return; const menu = document.querySelector('#pause:not(.hidden), #album:not(.hidden), #help:not(.hidden)') || /^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || ''); if (!menu && ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault(); this.keys.add(e.code); this.pressed.add(e.code); });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => { this.keys.clear(); this.down = false; this.rightDown = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());

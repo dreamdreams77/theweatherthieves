@@ -2,6 +2,7 @@ import './../src/style.css';
 import { Game } from './core/Game.js';
 import { Assets } from './gfx/Assets.js';
 import { Settings } from './core/Settings.js';
+import { Progress } from './core/Progress.js';
 
 const canvas = document.getElementById('c');
 const bar = document.querySelector('.loadbar i'), btn = document.getElementById('begin'), cont = document.getElementById('continue');
@@ -16,7 +17,7 @@ function start() {
       await Assets.load((p) => (bar.style.width = 35 + p * 35 + '%')); game.useAssets?.();
       Settings.load(); game.build((p) => (bar.style.width = 70 + p * 30 + '%')); game.applySettings();
       window.__game = game;
-      let has = false; try { has = !!localStorage.getItem('weather-thieves-save-v1'); } catch {}
+      let has = false; try { has = !!localStorage.getItem('weather-thieves-save-v1') || (Progress.data.chapter || 1) > 1; } catch {}
       document.querySelector('.loadbar').style.display = 'none'; btn.disabled = false; btn.textContent = has ? 'Continue' : 'Begin the journey';
       if (has) { cont.classList.remove('hidden'); cont.addEventListener('click', () => { if (confirm('Start a new game? Your saved progress will be erased.')) game.begin(true); }); }
       btn.addEventListener('click', () => game.begin(false));

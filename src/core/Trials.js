@@ -43,13 +43,14 @@ class Target {
   dispose(scene) { scene.remove(this.g); this.g.traverse((o) => { o.geometry?.dispose(); }); }
 }
 
+const _free = (o) => o.traverse((m) => { m.geometry?.dispose(); [].concat(m.material || []).forEach((x) => { x.map?.dispose(); x.dispose(); }); });
 export class Trials {
   constructor(game) { this.game = game; this.active = null; this.stone = null; this.hud = document.getElementById('trialHud'); }
   best(n) { return (Progress.data.trials || {})[n]; }
   medalFor(n, time) { const m = TRIALS[n].medals; return time <= m[0] ? 'gold' : time <= m[1] ? 'silver' : time <= m[2] ? 'bronze' : null; }
   /** place this chapter's trial stone near the spawn */
   setup() {
-    const g = this.game; this.cancel(true); if (this.stone) { g.scene.remove(this.stone); this.stone = null; }
+    const g = this.game; this.cancel(true); if (this.stone) { g.scene.remove(this.stone); _free(this.stone); this.stone = null; }
     const sp = g.world.spawn || [3, 8], n = g.chapterNo; if (!TRIALS[n]) return; let x = sp[0] + 4, z = sp[1] - 3; for (let i = 0; i < 16; i++) { const y = g.terrain.groundAt(x, z, 200); if (y && !g.terrain.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 1.2)) break; x = sp[0] + Math.cos(i) * (3 + i * 0.4); z = sp[1] + Math.sin(i) * (3 + i * 0.4); }
     const y = g.terrain.groundAt(x, z, 200)?.y ?? 0; const s = new THREE.Group(); s.position.set(x, y, z);
     const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8, 0), std({ color: 0xa59cae, roughness: 0.9, flatShading: true })); rock.scale.set(0.8, 1.6, 0.6); rock.position.y = 1.1; rock.castShadow = true; s.add(rock);

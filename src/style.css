@@ -60,3 +60,21 @@ body.big-text #dText { font-size:25px; } body.big-text #objText { font-size:21px
 #trialHud { position:absolute; top:84px; right:14px; padding:10px 16px; min-width:180px; text-align:center; display:none; } #trialHud.show { display:block; } #trialHud b { display:block; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); } #trialHud .big { display:block; font-size:34px; font-weight:800; line-height:1.1; } #trialHud small { display:block; font-size:12px; opacity:.8; max-width:220px; }
 #askFen { position:absolute; right:14px; bottom:22px; pointer-events:auto; } #askFen kbd { font:700 10px var(--font); opacity:.6; } body.touch #askFen { bottom:auto; top:64px; }
 .trials { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); } .trow { background:rgba(255,255,255,.08); border-radius:10px; padding:6px 10px; font-size:13px; border-left:4px solid #6a6090; } .trow b { display:block; } .trow.gold { border-color:#ffd24a; } .trow.silver { border-color:#dfe6f0; } .trow.bronze { border-color:#d08a4a; }
+/* Puffkin Arcade overlay */
+#arcade { position:fixed; inset:0; z-index:60; background:#21182c; } #arcade.hidden { display:none; } #arcade canvas { position:absolute; inset:0; touch-action:none; }
+#arcMenu, #arcEnd { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px,92vw); max-height:92vh; overflow:auto; padding:18px 20px; text-align:center; }
+#arcMenu h2, #arcEnd h2 { margin:0 0 4px; color:var(--gold); } #arcMenu .sub { margin:0 0 12px; opacity:.8; font-size:14px; }
+#arcEnd.hidden, #arcMenu.hidden, #arcQuit.hidden { display:none; } #arcEnd .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.arcGame { display:block; width:100%; text-align:left; margin:0 0 10px; padding:12px 14px; border-radius:16px; border:2px solid rgba(255,255,255,.12); background:linear-gradient(135deg,#e8607a33,#6fb8f022); color:inherit; font:inherit; cursor:pointer; }
+.arcGame:hover, .arcGame:focus-visible { border-color:var(--gold); } .arcGame b { display:block; font-size:18px; } .arcGame span { display:block; font-size:14px; opacity:.9; } .arcGame small { display:block; font-size:12px; opacity:.65; margin-top:3px; }
+#arcQuit { position:absolute; top:12px; right:12px; } #arcClose { margin-top:6px; }
+/* touch HUD layout (no overlaps on small phones, portrait or landscape) */
+body.touch #toolhint { display:none; } body.touch #askFen kbd { display:none; }
+body.touch #askFen { left:max(14px,env(safe-area-inset-left)); right:auto; top:auto; bottom:auto; top:122px; padding:6px 12px; font-size:13px; }
+body.touch #trialHud { left:max(14px,env(safe-area-inset-left)); right:auto; top:164px; min-width:0; width:150px; padding:6px 10px; } body.touch #trialHud .big { font-size:24px; } body.touch #trialHud small { font-size:11px; }
+@media (max-width:420px) { #top-r { flex-wrap:wrap; justify-content:flex-end; max-width:132px; gap:6px; } #obj { max-width:calc(100vw - 172px); } }
+@media (max-height:520px) { body.touch #obj { display:block; max-width:34vw; padding:6px 10px; top:8px; } body.touch #obj small, body.touch #objSub { display:none; } body.touch #askFen { top:8px; left:50%; transform:translateX(-50%); } body.touch #trialHud { top:auto; bottom:8px; left:max(14px,env(safe-area-inset-left)); width:140px; } }
+body.touch .toast { top:50%; }
+@media (max-height:520px) { body.touch #askFen { top:auto; bottom:auto; left:max(14px,env(safe-area-inset-left)); transform:none; top:64px; } body.touch #trialHud { top:6px; bottom:auto; left:50%; transform:translateX(-50%); width:auto; min-width:0; max-width:30vw; padding:4px 10px; } body.touch #trialHud small { display:none; } body.touch #trialHud .big { font-size:18px; } body.touch #trialHud b { font-size:10px; } body.touch .tool { width:48px; height:44px; } body.touch .toast { top:38%; } }
+@media (max-height:520px) { body.touch #askFen { top:90px; } body.touch #trialHud { top:auto; bottom:62px; } body.touch #obj .obj-h { display:none; } body.touch #askFen { top:70px; } body.touch #objText { font-size:13px; } }
+@media (max-width:420px) and (min-height:521px) { body.touch .toast, body.touch .toast.show { top:150px; left:auto; right:12px; transform:none; max-width:min(180px,calc(100vw - 190px)); font-size:13px; padding:8px 12px; } }

@@ -19,7 +19,9 @@ import { Progress } from './Progress.js';
 import { Settings } from './Settings.js';
 import { Combos } from './Combos.js';
 import { Post } from '../gfx/Post.js';
+import { applyClay, clayMood } from '../gfx/Clay.js';
 import { Trials, TRIALS } from './Trials.js';
+import { Arcade } from '../minigames/Arcade.js';
 import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
 
@@ -47,10 +49,10 @@ export class Game {
   resize() { const w = innerWidth, h = innerHeight; this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w / h < 0.8 ? 62 : 52; this.camera.updateProjectionMatrix(); this.rig.fov = this.camera.fov;  this.post?.setSize(w, h, this.dpr); }
   build(progress) {
     Progress.load(); const before0 = new Set(this.scene.children);
-    this.world = new SunkenSky(this); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
+    const r0 = new Set(this.weather.reactives); this.world = new SunkenSky(this); const worldR = new Set(this.weather.reactives.filter((r) => !r0.has(r))); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
-    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
-    this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = [...this.weather.reactives]; this.trials.setup(); this.ui.setTool(0);
+    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.arcade = new Arcade(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
+    this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = this.weather.reactives.filter((r) => !worldR.has(r)); this.trials.setup(); this.arcade.setup(); this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());
     // resume position
@@ -68,17 +70,17 @@ export class Game {
       this.setRestore(C.restore ?? 0, true); this.narr = new C.Narr(this); this.narr.restore?.(); this.narr.init(); if (n === 1) this.narr.flags.intro = true;
       this.palette = { fogA: 0xb9b0c4, fogB: 0xf2d6bc, tint: 0x888888, tintAmt: 0, density: [0.0078, 0.0058], ...C.palette };
       if (n !== 1) this.setRestore(C.restore ?? 0.35, true); this.weather.ambient = C.ambient || null; this.audio.setChapter?.(n);
-      const sp = this.world.spawn; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
-      this.world.fenCloud && (this.world.fenCloud.owner = this.companion); this.trials.setup();
+      const sp = this.world.spawn || [3, 8]; const y = this.terrain.groundAt(sp[0], sp[1], 500)?.y ?? 0; this.player.pos.set(sp[0], y, sp[1]); this.player.vel.set(0, 0, 0); this.player.safe.copy(this.player.pos); this.player.locked = false; this.companion.pos.set(sp[0] + 2, y, sp[1] + 2); this.companion.vel.set(0, 0, 0);
+      this.world.fenCloud && (this.world.fenCloud.owner = this.companion); this.trials.setup(); this.arcade.setup();
       this.rig.snap(this.player.pos); this.ui.setGlints(0); this.ui.setTool(0); this.ui.refreshMemories?.(); this.ui.showEnd && document.getElementById('end').classList.add('hidden');
       this.ui.setChapterLabel(n, C.title); this.ui.setObjective(C.title, ''); this.state = 'play'; this.shot(null);
-      setTimeout(() => { ov?.classList.remove('show'); this.narr.begin?.(); }, 1800);
+      const narr = this.narr; setTimeout(() => { ov?.classList.remove('show'); const go = () => { if (this.narr !== narr) return; if (this.paused || this.arcadeOpen) setTimeout(go, 300); else narr.begin?.(); }; go(); }, 1800);
     }, 900);
   }
   chapterTitle() { return this.chapterNo === 1 ? 'The Sunken Sky' : (CHAPTERS[this.chapterNo]?.title || 'This chapter'); }
   disposeWorld() {
     for (const c of this.weather.clouds) c.dispose?.(); this.weather.clouds = []; this.weather.beams.length = 0; this.weather.reactives = [...(this.weather.keep || [])];
-    for (const o of this.worldObjs || []) { this.scene.remove(o); o.traverse?.((m) => { if (m.geometry) m.geometry.dispose?.(); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => x.dispose?.()); }); }
+    for (const o of this.worldObjs || []) { this.scene.remove(o); o.traverse?.((m) => { if (m.geometry) m.geometry.dispose?.(); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { for (const k in x) if (x[k]?.isTexture && x[k] !== this.scene.environment) x[k].dispose(); x.dispose?.(); }); }); }
     this.worldObjs = []; const t = this.terrain; t.islands.length = 0; t.surfaces.length = 0; t.colliders.length = 0; this._grass = null;
   }
   spawnFor(i) { const w = this.world; const pts = { home: [3, 8], meadow: [-26, -13], rise: [-19, -48], summit: [20, -61] }[i.id] || [3, 8]; const y = i.heightAt(pts[0], pts[1]); return new THREE.Vector3(pts[0], y, pts[1]); }
@@ -87,10 +89,11 @@ export class Game {
     const r = this.restore, c = new THREE.Color(); G.uSat.value = lerp(0.58, 1.08, r); this.sky.restore.value = r;
     this.sun.intensity = lerp(1.5, 3.4, r); this.sun.color.set(0xe8e4ff).lerp(c.set(0xffdfae), r); this.hemi.intensity = lerp(1.15, 0.95, r); this.hemi.color.set(0xb8c4ff).lerp(c.set(0x9fc8ff), r); this.hemi.groundColor.set(0x9a8a78).lerp(c.set(0xb08a68), r);
     const P = this.palette; this.scene.fog.color.set(P.fogA).lerp(c.set(P.fogB), r); this.scene.fog.density = lerp(P.density[0], P.density[1], r); this.sky.tint.value.set(new THREE.Color(P.tint).r, new THREE.Color(P.tint).g, new THREE.Color(P.tint).b, P.tintAmt); this.fill.intensity = lerp(0.55, 0.35, r); this.renderer.toneMappingExposure = lerp(1.0, 1.05, r); this.scene.environmentIntensity = lerp(0.3, 0.5, r);
+    clayMood(this); this.hemiBase = this.hemi.intensity;
   }
   shot(s, dur = 4) { this.rig.setShot(s); this.shotT = s ? dur : 0; }
   shake(a) { if (!Settings.data.reduceMotion) this.rig.shake = a; }
-  applySettings() { const s = Settings.data; this.setPost(s.fx ?? !this.quality.mobile); this.audio.setVolume(s.volume); this.audio.setMusic(s.music); document.body.classList.toggle('big-text', !!s.bigText); document.body.classList.toggle('reduce-motion', !!s.reduceMotion); this.rig.invertY = !!s.invertY; }
+  applySettings() { const s = Settings.data; this.setPost(s.fx ?? !this.quality.mobile); this.audio.setVolume(s.volume); this.audio.setMusic(s.music); document.body.classList.toggle('big-text', !!s.bigText); document.body.classList.toggle('reduce-motion', !!s.reduceMotion); this.rig.invertY = !!s.invertY; applyClay(this); }
   pause(on) { if (on === this.paused) return; this.paused = on; this.ui.showPause(on); }
   entityOf(who) { const npc = (this.world.npcs || []).find((n) => n.id === who); if (npc) return { pos: npc.pos, yaw: npc.yaw, head: 1.45 * npc.k * (npc.spec.tall ?? 1), face: npc.face, c: npc, rig: npc }; if (who === 'juno') return { pos: this.player.pos, yaw: this.player.yaw, head: 1.35, face: this.player.juno.face, c: this.player, rig: this.player.juno }; if (who === 'fen') return { pos: this.companion.pos, yaw: this.companion.yaw, head: 2.1, face: this.companion.fen.face, c: this.companion, rig: this.companion.fen }; if (who === 'sunny' && this.world.sunny) return { pos: this.world.sunny.group.getWorldPosition(new THREE.Vector3()), yaw: Math.PI * 0.2, head: 0, face: this.world.sunny.face, c: null, rig: null }; return null; }
   /** play dialogue with cinematic speaker framing. opts: {noLock, shot=true, onEnd} */
@@ -99,7 +102,7 @@ export class Game {
       let delay = 0; for (const l of lines) { const who = l.who; setTimeout(() => { if (who === 'fen') this.say.fen(l.text, 4200); else if (who === 'juno') this.say.juno(l.text, 4200); else this.ui.toast(l.text, 4200); if (l.ex) { if (who === 'juno') this.player.setExpr(l.ex, 2); } if (l.anim) (who === 'fen' ? this.companion.fen : this.player.juno).play(l.anim); }, delay); delay += 2200 + l.text.length * 38; }
       if (opts.onEnd) setTimeout(opts.onEnd, delay); return;
     }
-    if (this.ui.dlg.active) { const q = this.ui.dlg.lines.slice(this.ui.dlg.i + 1); this.ui.dlg.lines = this.ui.dlg.lines.slice(0, this.ui.dlg.i + 1).concat(lines, q); return; }
+    if (this.ui.dlg.active) { const q = this.ui.dlg.lines.slice(this.ui.dlg.i + 1); this.ui.dlg.lines = this.ui.dlg.lines.slice(0, this.ui.dlg.i + 1).concat(lines, q); if (opts.onEnd) { const prev = this.ui.dlg.onEnd; this.ui.dlg.onEnd = () => { prev?.(); opts.onEnd(); }; } return; }
     const prevState = this.state; this.player.locked = true;
     this.ui.play(lines, {
       onLine: (l) => {
@@ -124,7 +127,7 @@ export class Game {
     if (this.state !== 'play') return; if (Math.hypot(npc.pos.x - this.player.pos.x, npc.pos.z - this.player.pos.z) > 9) { this.say.juno('Let me get closer first!'); return; }
     const lines = this.narr.npcLines?.(npc); if (!lines || !lines.length) return; npc.react = 6; this.dialogue(lines, { shot: true, onEnd: () => (npc.react = 0) });
   }
-  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; if (this.trials.interact()) return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
+  interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; const dA = this.arcade.pos ? Math.hypot(p.pos.x - this.arcade.pos.x, p.pos.z - this.arcade.pos.z) : 1e9, dT = this.trials.stonePos ? Math.hypot(p.pos.x - this.trials.stonePos.x, p.pos.z - this.trials.stonePos.z) : 1e9; if (dA < dT && this.arcade.interact()) return; if (this.trials.interact()) return; if (this.arcade.interact()) return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
   begin(newGame) {
     this.audio.start(); this.audio.setMuted(this.audio.muted);
     if (newGame) { this.narr.reset(); Progress.reset(); location.reload(); return; }
@@ -154,12 +157,12 @@ export class Game {
     this.player.update(dt, t, input, this.rig.yaw);
     this.companion.update(dt, t, this.player);
     const env = this.cloudEnv(); this.weather.clouds.forEach((c) => c.update(dt, t, env));
-    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.trials.update(dt, t); this.reactToWeather(dt);
+    this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.trials.update(dt, t); this.arcade.update(dt, t); this.reactToWeather(dt);
     // camera
     if (this.state === 'dialogue' || this.cinematic) { input.orbit.set(0, 0); }
     this.rig.update(dt, this.player.pos, input, this.player.vel, this.terrain); this.camera.updateMatrixWorld();
     this.lookTarget = this.camera.position;
-    this.sky.update(t, this.camera.position); if (this.weather.flash > 0) { this.hemi.intensity += this.weather.flash * 2.2; this.flashing = true; } else if (this.flashing) { this.flashing = false; this.applyMood(); }
+    this.sky.update(t, this.camera.position); if (this.weather.flash > 0) { this.hemi.intensity = (this.hemiBase ?? this.hemi.intensity) + (Settings.data.reduceMotion ? 0 : Math.min(1, this.weather.flash) * 2.2); this.flashing = true; } else if (this.flashing) { this.flashing = false; this.applyMood(); }
     // shadows follow player (snap texels)
     const target = this.player.pos, sd = this.sunDir; const k = 2 * this.sun.shadow.camera.right / this.quality.shadow; const sx = Math.round(target.x / k) * k, sy = Math.round(target.y / k) * k, sz = Math.round(target.z / k) * k;
     this.sun.target.position.set(sx, sy, sz); this.sun.position.set(sx + sd.x * 80, sy + sd.y * 80, sz + sd.z * 80); this.sun.target.updateMatrixWorld();
@@ -190,14 +193,14 @@ export class Game {
   }
   /** QA helper: force one render (used with ?norender=1 for real-time headless tests) */
   draw() { if (this.post) this.post.render(); else this.renderer.render(this.scene, this.camera); }
-  setPost(on) { if (on && !this.post) { this.post = new Post(this.renderer, this.scene, this.camera); this.post.setSize(innerWidth, innerHeight, this.dpr); } else if (!on) this.post = null; }
+  setPost(on) { if (on && !this.post) { this.post = new Post(this.renderer, this.scene, this.camera); this.post.setSize(innerWidth, innerHeight, this.dpr); } else if (!on && this.post) { this.post.dispose(); this.post = null; } }
   renderOnce() { this.draw(); }
   /** QA helper: advance the simulation without rendering */
   sim(sec, dt = 1 / 30) { for (let t = 0; t < sec; t += dt) { this.update(dt); this.input.endFrame(); } }
   frame(dtReal) {
-    const dt = Math.min(dtReal, 0.05);
-    if (!this.paused) this.update(dt); else this.input.endFrame();
-    if (!this.noRender) this.draw();
+    const dt = Math.min(Math.max(dtReal, 0), 0.05);
+    if (!this.paused && !this.arcadeOpen) this.update(dt); else this.input.endFrame();
+    if (!this.noRender && !this.arcadeOpen) this.draw();
     this.input.endFrame();
     // adaptive resolution
     this._acc = (this._acc || 0) + dtReal; this._n = (this._n || 0) + 1;

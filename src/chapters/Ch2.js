@@ -193,7 +193,7 @@ export class VillageNarr extends ChapterNarr {
   onGrab(c) { super.onGrab(c); }
   freeDryCloud() { const g = this.game, w = g.world; w.dryOpen = true; w.lid.userData.v = 9; w.dry.face.set('happy'); w.dry.face.talk = 1; this.flags.rained = true; g.setRestore(0.8); g.weather.burst(w.dry.pos, 0xffffff, 60, 8, 2); g.audio.sfx('finale'); g.shake(0.25);
     g.shot({ pos: w.fountainPos.clone().add(new THREE.Vector3(-9, 6, 11)), look: w.fountainPos.clone().add(new THREE.Vector3(0, 6, 0)) }, 12); this.finale = { t: 0 };
-    setTimeout(() => this.say([{ who: 'narrator', text: 'The Dry Cloud laughed so hard it forgot to be sad — and then it began to rain.' },
+    setTimeout(() => this.game.narr === this && this.say([{ who: 'narrator', text: 'The Dry Cloud laughed so hard it forgot to be sad — and then it began to rain.' },
       { who: 'pib', ex: 'excited', text: 'RAIN! Real rain! Everyone — umbrellas DOWN! It is the Day of Dancing! (I may cry. Do not look.)' },
       { who: 'orla', ex: 'love', text: 'Umbrellas are just hugs with ribs. Now they have something to hug.' },
       { who: 'fen', ex: 'surprised', text: 'It is raining on someone who is not me. This is an extraordinary day.' },
