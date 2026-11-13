@@ -6,7 +6,7 @@ const SH = 'qa/shots/';
   const ev = (f, a) => page.evaluate(f, a);
   const flush = async () => { for (let i = 0; i < 40; i++) { if (!(await ev(() => __game.ui.dlg.active))) return; await page.keyboard.press('Enter'); await sleep(110); } };
   await page.click('#begin'); await sleep(400); await flush();
-  const d = await ev(() => { const g = __game, b = g.arcade.pos; g.player.pos.set(b.x + 2.4, g.terrain.topAt(b.x + 2.4, b.z) + 0.05, b.z); g.player.vel.set(0, 0, 0); g.sim(0.3); return b && Math.hypot(b.x - g.trials.stonePos.x, b.z - g.trials.stonePos.z); });
+  const d = await ev(() => { const g = __game, b = g.arcade.pos, s = g.trials.stonePos, l = Math.hypot(b.x - s.x, b.z - s.z), px = b.x - (b.x - s.x) / l * 1.9, pz = b.z - (b.z - s.z) / l * 1.9; g.player.pos.set(px, g.terrain.topAt(px, pz) + 0.05, pz); g.player.vel.set(0, 0, 0); g.sim(0.3); return b && Math.hypot(b.x - g.trials.stonePos.x, b.z - g.trials.stonePos.z); });
   check('arcade booth stands beside the trial stone', d > 2 && d < 8, String(d));
   await page.keyboard.press('KeyF'); await page.waitForFunction(() => __game.arcade.open, null, { timeout: 20000 });
   const m = await ev(() => ({ open: __game.arcade.open, items: [...document.querySelectorAll('.arcGame b')].map((b) => b.textContent) }));
