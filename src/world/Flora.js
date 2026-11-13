@@ -3,6 +3,7 @@ import { Parts, mesh, vcMat, tube, puff } from './Build.js';
 import { std } from '../gfx/Mat.js';
 import { rng, TAU, lerp } from '../core/Utils.js';
 import { Assets } from '../gfx/Assets.js';
+import { Settings } from '../core/Settings.js';
 
 function bladeGeo() {
   const pos = [], idx = [];
@@ -10,17 +11,35 @@ function bladeGeo() {
     pos.push(-c, 0, -s, c, 0, s, -c * 0.45 + lean, 0.5, -s * 0.45, c * 0.45 + lean, 0.5, s * 0.45, lean * 2, 1, 0); idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2, o + 2, o + 3, o + 4); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length / 3).fill(0).flatMap(() => [0, 1, 0]), 3)); return g;
 }
+/** Clay grass: one soft tuft = 5 fat, rounded-tip leaves that curl outward, shaded with upward normals and a dark-to-light
+ *  gradient so it reads like little rolled plasticine leaves (smooth and calm, no needle-thin blades that shimmer). */
+function tuftGeo() {
+  const pos = [], nor = [], col = [], idx = [], L = 5, S = 6;
+  for (let l = 0; l < L; l++) {
+    const a = (l / L) * TAU + (l % 2) * 0.35, ca = Math.cos(a), sa = Math.sin(a), h = 0.75 + ((l * 37) % 5) * 0.08, W = 0.11, out = 0.22 + (l % 3) * 0.05, o = pos.length / 3;
+    for (let i = 0; i <= S; i++) {
+      const t = i / S, w = W * Math.sqrt(Math.max(0, 1 - t * t)) * (0.75 + 0.25 * (1 - t)), r = out * t * t + 0.03, y = h * (t - 0.12 * t * t);
+      const cx = ca * r, cz = sa * r, px = -sa * w, pz = ca * w; // leaf width is tangential, so the tuft reads round from every side
+      pos.push(cx - px, y, cz - pz, cx + px, y, cz + pz);
+      const ny = 0.8, nx = ca * 0.55, nz = sa * 0.55; for (let k = 0; k < 2; k++) nor.push(nx, ny, nz);
+      const g = 0.62 + 0.38 * t; for (let k = 0; k < 2; k++) col.push(g, g, g);
+      if (i < S) { const v = o + i * 2; idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); }
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); return g;
+}
+const tuftMat = () => std({ color: 0xffffff, roughness: 0.62, side: THREE.DoubleSide, vertexColors: true }, { sway: 1, amp: 0.7 });
 const grassMat = () => std({ color: 0xffffff, roughness: 1, side: THREE.DoubleSide }, { sway: 1, amp: 0.9 });
 /** scatter grass / flowers on an island, avoiding circles. returns {group, update?} */
 export function scatterGrass(island, q, avoid, opts = {}) {
-  const r = rng(island.seed * 91 + 5), area = Math.PI * island.r * island.r, N = Math.floor(area * (opts.density ?? 6) * (q.mobile ? 0.55 : 1));
-  const mesh_ = new THREE.InstancedMesh(bladeGeo(), grassMat(), N), m = new THREE.Matrix4(), c = new THREE.Color(), qn = new THREE.Quaternion(), e = new THREE.Euler();
+  const clay = Settings.data.grass !== 'classic', r = rng(island.seed * 91 + 5), area = Math.PI * island.r * island.r, N = Math.floor(area * (opts.density ?? 6) * (q.mobile ? 0.55 : 1) * (clay ? 0.42 : 1));
+  const mesh_ = new THREE.InstancedMesh(clay ? tuftGeo() : bladeGeo(), clay ? tuftMat() : grassMat(), N), m = new THREE.Matrix4(), c = new THREE.Color(), qn = new THREE.Quaternion(), e = new THREE.Euler();
   let k = 0; const g1 = new THREE.Color(opts.a ?? 0x4f9a4c), g2 = new THREE.Color(opts.b ?? 0xa4cf62);
   for (let i = 0; i < N * 2 && k < N; i++) {
     const th = r() * TAU, rho = Math.sqrt(r()) * island.r, x = island.x + Math.cos(th) * rho, z = island.z + Math.sin(th) * rho;
     const y = island.heightAt(x, z); if (y === -Infinity || island.nearEdge(x, z) > 0.94) continue;
     let bad = false; for (const a of avoid) if ((x - a[0]) ** 2 + (z - a[1]) ** 2 < a[2] * a[2]) { bad = true; break; } if (bad) continue;
-    const s = 0.6 + r() * 0.9; e.set(0, r() * 6.28, 0); qn.setFromEuler(e); m.compose(new THREE.Vector3(x, y - 0.03, z), qn, new THREE.Vector3(s * 0.8, s * (0.2 + r() * 0.3), s * 0.8));
+    const s = 0.6 + r() * 0.9; e.set(0, r() * 6.28, 0); qn.setFromEuler(e); if (clay) { const k2 = 0.9 + r() * 0.8; m.compose(new THREE.Vector3(x, y - 0.04, z), qn, new THREE.Vector3(k2, k2 * (0.35 + r() * 0.3), k2)); } else m.compose(new THREE.Vector3(x, y - 0.03, z), qn, new THREE.Vector3(s * 0.8, s * (0.2 + r() * 0.3), s * 0.8));
     mesh_.setMatrixAt(k, m); c.copy(g1).lerp(g2, r()).multiplyScalar(0.8 + 0.4 * r()); mesh_.setColorAt(k, c); k++;
   }
   mesh_.count = k; mesh_.instanceMatrix.needsUpdate = true; mesh_.receiveShadow = false; mesh_.frustumCulled = false;

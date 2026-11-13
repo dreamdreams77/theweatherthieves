@@ -205,6 +205,6 @@ export class Game {
     this.input.endFrame();
     // adaptive resolution
     this._acc = (this._acc || 0) + dtReal; this._n = (this._n || 0) + 1;
-    if (this._acc > 1.2) { const fps = this._n / this._acc; this._acc = 0; this._n = 0; this.fps = fps; if (fps < 38 && this.dpr > 0.8) { this.dpr = Math.max(0.8, this.dpr - 0.2); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } else if (fps > 58 && this.dpr < this.quality.dpr) { this.dpr = Math.min(this.quality.dpr, this.dpr + 0.1); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } }
+    if (this._acc > 1.2) { const fps = this._n / this._acc; this._acc = 0; this._n = 0; this.fps = fps; const floor = Math.min(1, this.quality.dpr); if (fps < 38 && this.sun.shadow.mapSize.x > 1024) { this.sun.shadow.mapSize.set(1024, 1024); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null; } else if (fps < 38 && this.dpr > floor) { this.dpr = Math.max(floor, this.dpr - 0.25); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } else if (fps > 58 && this.dpr < this.quality.dpr) { this.dpr = Math.min(this.quality.dpr, this.dpr + 0.1); this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(innerWidth, innerHeight, false); this.post?.setSize(innerWidth, innerHeight, this.dpr); } }
   }
 }

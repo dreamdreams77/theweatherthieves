@@ -41,7 +41,8 @@ export class Arcade {
   /** booth beside the chapter's trial stone */
   setup() {
     const g = this.game; if (this.booth) { g.scene.remove(this.booth); _free(this.booth); this.booth = null; } const s = g.trials.stonePos; if (!s) return;
-    let x = s.x - 3.5, z = s.z + 2.5; for (let i = 0; i < 12; i++) { const gr = g.terrain.groundAt(x, z, s.y + 6, 20); if (gr && Math.abs(gr.y - s.y) < 2 && !g.terrain.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 1.6)) break; const a = 2 + i * 0.7; x = s.x + Math.cos(a) * 4.5; z = s.z + Math.sin(a) * 4.5; }
+    const sp = g.world.spawn || [3, 8], dx = s.x - sp[0], dz = s.z - sp[1], dl = Math.hypot(dx, dz) || 1, ux = dx / dl, uz = dz / dl; // beyond the stone, away from the spawn (never between the camera and the player)
+    let x = s.x + ux * 3.5 - uz * 2, z = s.z + uz * 3.5 + ux * 2; for (let i = 0; i < 12; i++) { const gr = g.terrain.groundAt(x, z, s.y + 6, 20); if (gr && Math.abs(gr.y - s.y) < 2 && !g.terrain.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 1.6)) break; const a = Math.atan2(uz, ux) + (i % 2 ? 1 : -1) * (0.35 + i * 0.18); x = s.x + Math.cos(a) * 4.5; z = s.z + Math.sin(a) * 4.5; }
     const y = g.terrain.groundAt(x, z, s.y + 6, 20)?.y ?? s.y, b = new THREE.Group(); b.position.set(x, y, z); b.rotation.y = Math.atan2(s.x - x, s.z - z) + Math.PI;
     const stripes = 10, R = 1.25; for (let i = 0; i < stripes; i++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, R, 1.1, 3, 1, true, (i / stripes) * Math.PI * 2, Math.PI * 2 / stripes), std({ color: i % 2 ? 0xffefd8 : 0xe8607a, side: THREE.DoubleSide, roughness: 0.8 })); m.position.y = 2.35; m.castShadow = true; b.add(m); }
     const counter = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.95, R, 1.0, 16), std({ color: 0x9a6a4a, roughness: 0.85 })); counter.position.y = 0.5; counter.castShadow = true; b.add(counter);

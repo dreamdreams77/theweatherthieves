@@ -6,7 +6,7 @@ function canvasTex(size, fn, { repeat = 1, srgb = true } = {}) {
   fn(img.data, size); ctx.putImageData(img, 0, 0);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-  t.anisotropy = 4; t.repeat.set(repeat, repeat); t.needsUpdate = true; return t;
+  t.anisotropy = 8; t.repeat.set(repeat, repeat); t.needsUpdate = true; return t;
 }
 const mix3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 function put(d, i, c, k = 1) { d[i] = clamp(c[0] * k, 0, 255); d[i + 1] = clamp(c[1] * k, 0, 255); d[i + 2] = clamp(c[2] * k, 0, 255); d[i + 3] = 255; }

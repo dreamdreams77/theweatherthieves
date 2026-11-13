@@ -26,9 +26,17 @@ Deployed to GitHub Pages by `.github/workflows/pages.yml` on every push to `main
 | Camera | right-drag, wheel zoom | drag the screen |
 | Tools | 1 Cloud · 2 Rain · 3 Wind · 4 Sun · 5 Frost | toolbar buttons, hold **USE** |
 | Squash / stretch a cloud | wheel or Q / E | − / + |
-| Talk, use valve / jar | F or click a character | Talk |
+| Talk, use valve / jar, trial stone, arcade | F or click a character | Talk |
+| Ask Fen for a hint | H or *Ask Fen* | *Ask Fen* |
+| Pause / settings | Esc or P | ❚❚ |
 
 Tools: **Cloud** picks up any cloud (click again to drop) · **Rain** rains from the cloud you carry · **Wind** blows a gust at the cursor · **Sun** aims a mirror's beam · **Frost** freezes whatever you breathe on — or, while carrying a cloud, makes it **snow**. A squashed cloud builds an electric **charge**.
+
+## Extras
+- **Weather Trials**: a glowing stone near each chapter's start runs a timed challenge (Bloom Rush, Pinwheel Parade, Freeze Frame, Spark Chase). Gold / silver / bronze medals and best times appear in the pause menu.
+- **Puffkin Arcade**: a striped booth in every chapter (or *Play mini games* in the pause menu) with three clay-style mini games: **Drizzle Dash** (catch rain, dodge hail), **Gust Glide** (one-tap gusts through a storm) and **Weather Pairs** (memory match). Keyboard, mouse and touch; best scores are saved.
+- **Claymation look** (inspired by HollowTide): thumbprint relief, a 12 fps "boil", characters posed on twos, warm studio light and satin sheen. Anti-aliased post-processing (4× MSAA) with a gentle sharpen and soft rounded clay grass tufts.
+- **Settings**: volume, music, reduce motion (no shake/flash/boil), larger text, invert Y, glow & film effects, claymation look, on-twos posing, classic thin grass.
 
 ## Systems
 - `src/core` game loop, input (keyboard / mouse / multi-touch), camera, tools, progress save
@@ -36,7 +44,8 @@ Tools: **Cloud** picks up any cloud (click again to drop) · **Rain** rains from
 - `src/world` islands, terrain / walkable surfaces, flora, props, puzzle machinery
 - `src/characters` Juno, Fen, Puffkins, Sunny, data-driven NPC cast (8 supporting characters)
 - `src/chapters` chapter 2–4 worlds and story logic · `src/puzzles` story state machines
-- `src/ui` HUD, dialogue, memories album · `src/audio` synthesised music / ambience / effects
+- `src/ui` HUD, dialogue, memories album, pause/settings · `src/audio` synthesised music / ambience / effects
+- `src/gfx` materials (clay shading), post-processing, assets · `src/minigames` the Puffkin Arcade
 
 Eight supporting characters: Mayor Pib, Madam Orla, Tock, Granny Mossback, Bramble & Burr, Professor Flicker, Old Gus, and Wren — each with a routine, weather reactions and dialogue that changes with what you have done (e.g. whether you flooded the village or squashed clouds).
 
@@ -48,11 +57,13 @@ npm run build && npx vite preview --port 4173 &
 node qa/playthrough.cjs   # Chapter 1 from title to finale with REAL keyboard + mouse, then Next chapter + reload/Continue
 node qa/mobile.cjs        # real multi-touch: joystick, camera drag, tool buttons, USE, jump, cloud tap, stretch
 node qa/ch2.cjs / ch3.cjs / ch4.cjs   # chapter mechanics (drive the real update loop with simulated aim)
+node qa/depth.cjs         # pause/settings, chapter select, mid-chapter save + Continue, almanac
+node qa/trials.cjs        # weather trials + Ask Fen + glow toggle
+node qa/arcade.cjs        # arcade booth and all three mini games (keyboard, mouse, touch)
 node qa/allshots.cjs      # screenshots of every chapter
 ```
 `?norender=1` skips drawing so the headless (software-GL) browser can play in real time; `__game.renderOnce()` takes pictures.
 
 ## Known limitations
 - Chapters 2–4 are verified by mechanics tests, not by a full keyboard/mouse run like Chapter 1.
-- Mid-chapter puzzle progress for chapters 2–4 is not persisted (chapter start, finished chapters and memories are).
 - Headless tests run on software GL, so real-GPU frame rates were not measured; draw calls are ~400–750 per frame, with distance culling and adaptive resolution.

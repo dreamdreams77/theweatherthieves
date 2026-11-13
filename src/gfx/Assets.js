@@ -28,7 +28,7 @@ export const Assets = {
     const L = new GLTFLoader(), base = './assets/'; let n = 0; const total = MODELS.length + 4;
     const tick = () => onProgress?.(++n / total);
     await Promise.all(MODELS.map(async (m) => { try { this.gltf[m] = await L.loadAsync(base + 'models/' + m + '.glb'); } catch (e) { console.warn('asset failed', m, e); } tick(); }));
-    const T = new THREE.TextureLoader(); const tl = async (k, f, srgb) => { try { const t = await T.loadAsync(base + 'tex/' + f); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.colorSpace = THREE.SRGBColorSpace; this.tex[k] = t; } catch (e) { console.warn('texture failed', f); } tick(); };
+    const T = new THREE.TextureLoader(); const tl = async (k, f, srgb) => { try { const t = await T.loadAsync(base + 'tex/' + f); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; this.tex[k] = t; } catch (e) { console.warn('texture failed', f); } tick(); };
     await Promise.all([tl('iceColor', 'ice_color.jpg', true), tl('iceNormal', 'ice_normal.jpg'), tl('iceRough', 'ice_rough.jpg')]);
     try { this.env = await new RGBELoader().loadAsync(base + 'env/spruit_sunrise_1k.hdr'); this.env.mapping = THREE.EquirectangularReflectionMapping; } catch (e) { console.warn('env failed'); } tick();
     this.ready = true;

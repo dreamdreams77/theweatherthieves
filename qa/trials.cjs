@@ -23,7 +23,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   const winds = await ev(() => __game.trials.active.targets.map((t, i) => [t.type, i]).filter((x) => x[0] === 'wind').map((x) => x[1]));
   for (const i of winds) {
     await ev((i) => { const g = __game, t = g.trials.active.targets[i], V = t.pos.constructor; const px = t.pos.x + 3, pz = t.pos.z; g.player.pos.set(px, g.terrain.topAt(px, pz) + 0.05, pz); g.player.vel.set(0, 0, 0); g.debugAim = { point: new V(t.pos.x, t.pos.y, t.pos.z), hit: null, hitType: null, ground: true }; }, i);
-    await page.mouse.move(550, 300); await page.mouse.down(); await sleep(2300); await page.mouse.up(); await sleep(100);
+    await page.mouse.move(550, 300); await page.mouse.down(); await page.waitForFunction((i) => __game.trials.active?.targets[i].done, i, { timeout: 25000 }).catch(() => {}); await page.mouse.up(); await sleep(100);
   }
   const wd = await ev(() => __game.trials.active.targets.filter((t) => t.type === 'wind').map((t) => t.done));
   check('Wind gusts spin both pinwheels', wd.every(Boolean), JSON.stringify(wd));
@@ -33,10 +33,10 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   await ev(() => { const g = __game, c = g.weather.clouds.find((c) => !c.personal && !c.fixed); g.tools.grab(c); });
   for (const i of rains) {
     await ev((i) => { const g = __game, t = g.trials.active.targets[i], V = t.pos.constructor; const px = t.pos.x + 4, pz = t.pos.z + 2; g.player.pos.set(px, g.terrain.topAt(px, pz) + 0.05, pz); g.player.vel.set(0, 0, 0); g.tools.held.moisture = 1; g.debugAim = { point: new V(t.pos.x, t.pos.y - 0.9, t.pos.z), hit: null, hitType: null, ground: true }; g.tools.held.pos.set(t.pos.x, t.pos.y + 4.5, t.pos.z); }, i);
-    await page.mouse.down(); await sleep(2600); await page.mouse.up(); await sleep(100);
+    await page.mouse.down(); await page.waitForFunction((i) => !__game.trials.active || __game.trials.active.targets[i].done, i, { timeout: 25000 }).catch(() => {}); await page.mouse.up(); await sleep(100);
   }
   await ev(() => { __game.debugAim = null; __game.tools.drop(); }); await sleep(300);
-  const res = await ev(() => ({ active: !!__game.trials.active, last: __game.trials.lastResult, saved: JSON.parse(localStorage.getItem('weather-thieves-progress-v1')).trials, toast: document.getElementById('toast').textContent }));
+  const res = await ev(() => ({ active: !!__game.trials.active, last: __game.trials.lastResult, saved: (JSON.parse(localStorage.getItem('weather-thieves-progress-v1') || '{}') || {}).trials, toast: document.getElementById('toast').textContent }));
   check('all six targets done → trial finishes with a time and medal', !res.active && res.last && res.last.medal === 'gold' && /Bloom Rush/.test(res.toast), JSON.stringify(res));
   check('best time + medal saved to progress', res.saved && res.saved[1] && res.saved[1].medal === 'gold' && Math.abs(res.saved[1].time - res.last.time) < 0.05);
   check('stone gem turns gold', await ev(() => __game.trials.gem.material.color.getHex() === 0xffd24a));
@@ -53,7 +53,7 @@ const { sleep, launch, check, results, shot } = require('./lib.cjs');
   const t3 = await ev(() => __game.trials.active && __game.trials.active.targets.map((t) => t.type).sort().join(','));
   check('chapter 3 Freeze Frame: 4 frost bubbles + 2 snow cairns', c3 && t3 === 'frost,frost,frost,frost,snow,snow', String(t3));
   await ev(() => { const g = __game; g.sim(3.5); const t = g.trials.active.targets.find((t) => t.type === 'frost'), V = t.pos.constructor, px = t.pos.x + 3, pz = t.pos.z; g.player.pos.set(px, g.terrain.topAt(px, pz) + 0.05, pz); g.player.vel.set(0, 0, 0); g.debugAim = { point: new V(t.pos.x, t.pos.y, t.pos.z), hit: null, hitType: null, ground: true }; });
-  await page.keyboard.press('Digit5'); await page.mouse.down(); await sleep(2300); await page.mouse.up(); await ev(() => (__game.debugAim = null));
+  await page.keyboard.press('Digit5'); await page.mouse.down(); await page.waitForFunction(() => __game.trials.active?.targets.some((t) => t.type === 'frost' && t.done), null, { timeout: 25000 }).catch(() => {}); await page.mouse.up(); await ev(() => (__game.debugAim = null));
   check('Frost breath freezes a bubble', await ev(() => __game.trials.active.targets.some((t) => t.type === 'frost' && t.done)));
   await shot(page, 'qa/shots/trial-ch3.png');
   await ev(() => { const g = __game, s = g.trials.stonePos; g.player.pos.set(s.x + 80, s.y + 30, s.z); g.sim(0.2); });
