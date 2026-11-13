@@ -79,8 +79,8 @@ export class Game {
   }
   chapterTitle() { return this.chapterNo === 1 ? 'The Sunken Sky' : (CHAPTERS[this.chapterNo]?.title || 'This chapter'); }
   disposeWorld() {
-    for (const c of this.weather.clouds) c.dispose?.(); this.weather.clouds = []; this.weather.beams.length = 0; this.weather.reactives = [...(this.weather.keep || [])];
-    for (const o of this.worldObjs || []) { this.scene.remove(o); o.traverse?.((m) => { if (m.geometry) m.geometry.dispose?.(); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { for (const k in x) if (x[k]?.isTexture && x[k] !== this.scene.environment) x[k].dispose(); x.dispose?.(); }); }); }
+    const free = (o) => o?.traverse?.((m) => { m.geometry?.dispose?.(); for (const x of [].concat(m.material || [])) { for (const k in x) if (x[k]?.isTexture && x[k] !== this.scene.environment) x[k].dispose(); for (const u of Object.values(x.uniforms || {})) if (u?.value?.isTexture) u.value.dispose(); x.dispose?.(); } }); for (const c of this.weather.clouds) { free(c.group); free(c.rainMesh); c.dispose?.(); } this.weather.clouds = []; this.weather.beams.length = 0; this.weather.reactives = [...(this.weather.keep || [])];
+    for (const o of this.worldObjs || []) { this.scene.remove(o); o.traverse?.((m) => { if (m.isSkinnedMesh) m.skeleton?.dispose?.(); if (m.geometry) m.geometry.dispose?.(); if (m.material) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { for (const k in x) if (x[k]?.isTexture && x[k] !== this.scene.environment) x[k].dispose(); for (const u of Object.values(x.uniforms || {})) if (u?.value?.isTexture && u.value !== this.scene.environment) u.value.dispose(); x.dispose?.(); }); }); }
     this.worldObjs = []; const t = this.terrain; t.islands.length = 0; t.surfaces.length = 0; t.colliders.length = 0; this._grass = null;
   }
   spawnFor(i) { const w = this.world; const pts = { home: [3, 8], meadow: [-26, -13], rise: [-19, -48], summit: [20, -61] }[i.id] || [3, 8]; const y = i.heightAt(pts[0], pts[1]); return new THREE.Vector3(pts[0], y, pts[1]); }
@@ -129,9 +129,10 @@ export class Game {
   }
   interact() { const p = this.player, c = this.companion; if (this.state !== 'play') return; const dA = this.arcade.pos ? Math.hypot(p.pos.x - this.arcade.pos.x, p.pos.z - this.arcade.pos.z) : 1e9, dT = this.trials.stonePos ? Math.hypot(p.pos.x - this.trials.stonePos.x, p.pos.z - this.trials.stonePos.z) : 1e9; if (dA < dT && this.arcade.interact()) return; if (this.trials.interact()) return; if (this.arcade.interact()) return; if (this.narr.onInteract?.()) return; const nn = (this.world.npcs || []).reduce((b, n) => { const d = Math.hypot(n.pos.x - p.pos.x, n.pos.z - p.pos.z); return d < 4.2 && (!b || d < b.d) ? { n, d } : b; }, null); if (nn) { this.talkNPC(nn.n); return; } const jd = Math.hypot(p.pos.x - this.world.jarPos.x, p.pos.z - this.world.jarPos.z); if (jd < 9 && this.narr.flags.visitedD) { this.narr.onJar(); return; } if (Math.hypot(p.pos.x - c.pos.x, p.pos.z - c.pos.z) < 6) this.say.onFen(); }
   begin(newGame) {
+    if (!newGame) { if (this.begun) return; this.begun = true; document.activeElement?.blur?.(); }
     this.audio.start(); this.audio.setMuted(this.audio.muted);
     if (newGame) { this.narr.reset(); Progress.reset(); location.reload(); return; }
-    document.body.classList.remove('on-title'); document.getElementById('title').classList.add('gone'); setTimeout(() => document.getElementById('title').remove(), 1400);
+    document.body.classList.remove('on-title'); document.getElementById('title').classList.add('gone'); setTimeout(() => document.getElementById('title')?.remove(), 1400);
     const resume = Math.min(4, Progress.data.chapter || 1);
     if (resume > 1 && CHAPTERS[resume]) { this.state = 'play'; this.loadChapter(resume); return; }
     const f = this.narr.flags;
