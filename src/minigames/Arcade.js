@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Progress } from '../core/Progress.js';
 import { Settings } from '../core/Settings.js';
+import { Haptics } from '../core/Haptics.js';
 import { std } from '../gfx/Mat.js';
 import { setBoil, text } from './clay2d.js';
 import { Catch } from './Catch.js';
@@ -81,7 +82,7 @@ export class Arcade {
     this.q('#arcEnd').classList.remove('hidden'); this.sfx(best ? 'gold' : 'end');
     const g = this.game, n = (Progress.data.arcade || {}); if (Object.keys(n).length === GAMES.length && !Progress.data.flags?.arcadeAll) { (Progress.data.flags ??= {}).arcadeAll = true; Progress.save(); g.ui.toast('You have played every arcade game! Pob is delighted.'); }
   }
-  sfx(k) { const a = this.game.audio; if (!a?.tone) return; ({ good: () => a.tone(880, 0.09, 0.07, 'triangle'), gold: () => { a.tone(988, 0.1, 0.07, 'triangle'); a.tone(1318, 0.18, 0.07, 'triangle', 0, 0.08); }, bad: () => a.tone(180, 0.25, 0.08, 'square', -80), flap: () => a.tone(420, 0.08, 0.05, 'sine', 260), flip: () => a.tone(620, 0.05, 0.05, 'triangle'), end: () => a.tone(330, 0.3, 0.07, 'triangle', -60) })[k]?.(); }
+  sfx(k) { Haptics.sfx(k === 'end' ? 'bad' : k); const a = this.game.audio; if (!a?.tone) return; ({ good: () => a.tone(880, 0.09, 0.07, 'triangle'), gold: () => { a.tone(988, 0.1, 0.07, 'triangle'); a.tone(1318, 0.18, 0.07, 'triangle', 0, 0.08); }, bad: () => a.tone(180, 0.25, 0.08, 'square', -80), flap: () => a.tone(420, 0.08, 0.05, 'sine', 260), flip: () => a.tone(620, 0.05, 0.05, 'triangle'), end: () => a.tone(330, 0.3, 0.07, 'triangle', -60) })[k]?.(); }
   resize() { const d = Math.min(2, devicePixelRatio || 1); this.w = innerWidth; this.h = innerHeight; this.cv.width = this.w * d; this.cv.height = this.h * d; this.cv.style.width = this.w + 'px'; this.cv.style.height = this.h + 'px'; this.ctx.setTransform(d, 0, 0, d, 0, 0); }
   q(s) { return this.el.querySelector(s); }
 }

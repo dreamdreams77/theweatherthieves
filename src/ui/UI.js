@@ -44,7 +44,7 @@ export class UI {
         <li><b>F</b> talk / use · <b>Esc</b> close this</li></ul><button id="helpClose" class="btn">Back to the sky</button></div></div>
       <div id="end" class="overlay hidden"><div class="card end"><div class="eyebrow">Chapter 1 complete</div><h1>The Sunken Sky is saved</h1><p>Sunny is free — and four more jars are waiting.<br>Rain's village, Snow's forest and Thunder's factory still need their weather back.</p><p class="sm" id="endStats"></p><button id="endNext" class="btn">Next chapter</button> <button id="endClose" class="btn alt">Keep exploring</button></div></div>
       <div id="pause" class="overlay hidden"><div class="card wide pausecard"><h2>Paused</h2>
-        <div class="prow"><button id="pResume" class="btn">Resume</button><button id="pRestart" class="btn alt">Restart chapter</button><button id="pHelp" class="btn alt">Controls</button></div>
+        <div class="prow"><button id="pResume" class="btn">Resume</button><button id="pRestart" class="btn alt">Restart chapter</button><button id="pHelp" class="btn alt">Controls</button><button id="pInstall" class="btn alt hidden">Install app</button></div>
         <h3>Chapters</h3><div id="pChapters" class="prow"></div>
         <h3>Puffkin Arcade</h3><div class="prow"><button id="pArcade" class="pill">Play mini games</button></div>
         <h3>Weather trials</h3><div id="pTrials" class="prow trials"></div>
@@ -57,6 +57,7 @@ export class UI {
         <label class="set"><input id="sFx" type="checkbox"> Glow &amp; film effects (turn off for speed)</label>
         <label class="set"><input id="sClay" type="checkbox"> Claymation look (thumbprints, 12 fps boil)</label>
         <label class="set"><input id="sTwos" type="checkbox"> Animate characters "on twos" (stop-motion poses)</label>
+        <label class="set" id="sVibRow"><input id="sVib" type="checkbox"> Vibration on phones</label>
         <label class="set"><input id="sGrass" type="checkbox"> Classic thin grass blades (applies when a chapter loads)</label>
       </div></div>
       <div id="chapterCard"><div class="cc-no"></div><div class="cc-t"></div></div>
@@ -77,7 +78,7 @@ export class UI {
     this.q('#pHelp').addEventListener('click', () => { this.q('#help').classList.remove('hidden'); });
     this.q('#pRestart').addEventListener('click', () => { if (!confirm('Restart this chapter from the beginning?')) return; Progress.data.flags['ch' + game.chapterNo] = null; if (game.chapterNo === 1) { try { localStorage.removeItem('weather-thieves-save-v1'); } catch {} } Progress.save(); game.pause(false); game.loadChapter(game.chapterNo); });
     const S = Settings.data, bind = (id, key, ev = 'input', get = (el) => +el.value) => { const el = this.q(id); if (el.type === 'checkbox') el.checked = !!S[key]; else el.value = S[key]; el.addEventListener(ev, () => { S[key] = el.type === 'checkbox' ? el.checked : get(el); Settings.save(); game.applySettings(); }); };
-    bind('#sVol', 'volume'); bind('#sMusic', 'music'); bind('#sMotion', 'reduceMotion', 'change'); bind('#sText', 'bigText', 'change'); bind('#sInvert', 'invertY', 'change'); bind('#sClay', 'clay', 'change'); bind('#sTwos', 'twos', 'change'); { const gr = this.q('#sGrass'); gr.checked = S.grass === 'classic'; gr.addEventListener('change', () => { S.grass = gr.checked ? 'classic' : 'clay'; Settings.save(); }); } { const fx = this.q('#sFx'); fx.checked = S.fx ?? !game.quality.mobile; fx.addEventListener('change', () => { S.fx = fx.checked; Settings.save(); game.applySettings(); }); }
+    bind('#sVol', 'volume'); bind('#sMusic', 'music'); bind('#sMotion', 'reduceMotion', 'change'); bind('#sText', 'bigText', 'change'); bind('#sInvert', 'invertY', 'change'); bind('#sClay', 'clay', 'change'); bind('#sTwos', 'twos', 'change'); bind('#sVib', 'vibrate', 'change'); this.q('#sVibRow').style.display = 'vibrate' in navigator ? '' : 'none'; { const gr = this.q('#sGrass'); gr.checked = S.grass === 'classic'; gr.addEventListener('change', () => { S.grass = gr.checked ? 'classic' : 'clay'; Settings.save(); }); } { const fx = this.q('#sFx'); fx.checked = S.fx ?? !game.quality.mobile; fx.addEventListener('change', () => { S.fx = fx.checked; Settings.save(); game.applySettings(); }); }
     addEventListener('keydown', (e) => { if ((e.code === 'Escape' || e.code === 'KeyP') && game.state !== 'title' && game.state !== 'loading' && this.q('#help').classList.contains('hidden') && this.q('#album').classList.contains('hidden')) { e.preventDefault(); game.pause(!game.paused); } });
     this.q('#memBtn').addEventListener('click', () => { this.refreshMemories(); this.q('#album').classList.remove('hidden'); }); this.q('#albumClose').addEventListener('click', () => this.q('#album').classList.add('hidden'));
     this.dlg = { lines: [], i: 0, typing: false, text: '', pos: 0, onEnd: null, onLine: null, active: false };

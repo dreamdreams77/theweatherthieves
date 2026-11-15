@@ -22,6 +22,7 @@ import { Post } from '../gfx/Post.js';
 import { applyClay, clayMood } from '../gfx/Clay.js';
 import { Trials, TRIALS } from './Trials.js';
 import { Arcade } from '../minigames/Arcade.js';
+import { Haptics } from './Haptics.js';
 import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
 
@@ -51,7 +52,8 @@ export class Game {
     Progress.load(); const before0 = new Set(this.scene.children);
     const r0 = new Set(this.weather.reactives); this.world = new SunkenSky(this); const worldR = new Set(this.weather.reactives.filter((r) => !r0.has(r))); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
-    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.arcade = new Arcade(this); this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
+    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.arcade = new Arcade(this);
+    { const sfx = this.audio.sfx.bind(this.audio); this.audio.sfx = (n) => { Haptics.sfx(n); return sfx(n); }; const bolt = this.weather.bolt.bind(this.weather); this.weather.bolt = (...a) => { Haptics.sfx('bolt'); return bolt(...a); }; } this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
     this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = this.weather.reactives.filter((r) => !worldR.has(r)); this.trials.setup(); this.arcade.setup(); this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());

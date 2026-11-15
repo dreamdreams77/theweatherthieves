@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Haptics } from './Haptics.js';
 import { clamp, damp } from './Utils.js';
 export const TOOLS = [
   { id: 'cloud', name: 'Cloud', key: '1', color: '#ffffff', hint: 'Click a cloud to pick it up. Click again to let go. Wheel / Q / E squashes and stretches it.' },
@@ -92,6 +93,7 @@ export class Tools {
     // cursor ring
     this.ring.visible = !locked && aim.ground && (tool !== 'cloud' || !!aim.hit === false); this.ring.position.copy(aim.point).add(new THREE.Vector3(0, 0.08, 0)); const s = 1 + Math.sin(t * 5) * 0.06; this.ring.scale.setScalar((useDown ? 1.3 : 1) * s * (tool === 'rain' && this.held ? this.held.footprint * 0.9 : 1)); this.ring.material.color.set(TOOLS[this.index].color);
     // first-use hooks
+    if (useJust && tool !== 'cloud') Haptics.sfx('tool');
     if (useDown && !this.firstUse[tool]) { this.firstUse[tool] = true; g.story?.onToolFirstUse?.(tool); }
     // cursor style
     g.canvas.style.cursor = aim.hitType === 'cloud' || aim.hitType === 'mirror' || aim.hitType === 'puffkin' || aim.hitType === 'fen' || aim.hitType === 'jar' || aim.hitType === 'glint' || aim.hitType === 'npc' ? 'pointer' : 'crosshair';

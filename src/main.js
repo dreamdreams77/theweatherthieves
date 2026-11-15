@@ -28,3 +28,14 @@ function start() {
   } catch (e) { console.error(e); document.getElementById('title').insertAdjacentHTML('beforeend', '<p>Sorry — your browser could not start WebGL.</p>'); }
 }
 start();
+
+// ---- installable app: offline service worker + "Install app" button (Android/desktop prompt, iOS instructions)
+const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+if ('serviceWorker' in navigator && import.meta.env.PROD && !/[?&](nosw|norender)=1/.test(location.search)) addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('offline cache unavailable', e)));
+let deferred = null; const showInstall = () => document.getElementById('pInstall')?.classList.remove('hidden');
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; showInstall(); });
+addEventListener('appinstalled', () => { deferred = null; document.getElementById('pInstall')?.classList.add('hidden'); window.__game?.ui.toast('Installed! The Weather Thieves now lives on your home screen and plays offline.', 6000); });
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const wireInstall = () => { const b = document.getElementById('pInstall'); if (!b) return setTimeout(wireInstall, 300); if (isIOS && !standalone) showInstall();
+  b.addEventListener('click', async () => { if (deferred) { deferred.prompt(); const r = await deferred.userChoice.catch(() => null); deferred = null; if (r?.outcome === 'accepted') b.classList.add('hidden'); } else if (isIOS) window.__game?.ui.toast('On iPhone / iPad: tap the Share button, then "Add to Home Screen".', 8000); }); };
+if (!standalone) wireInstall();
