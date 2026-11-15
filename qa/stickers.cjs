@@ -99,7 +99,7 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) 
   check('phone: tap a cloud, then its rod, links it (Lightning Link)', (await ev(() => __game.arcade.cur.links)) === 1);
   await page.waitForFunction(() => __game.arcade.cur.clouds.length > 0, null, { timeout: 20000 }); p = await pos(); const cdp = await page.context().newCDPSession(page);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y }] }); for (let i = 1; i <= 6; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: p.x + (p.rx - p.x) * i / 6, y: p.y + (p.ry - p.y) * i / 6 }] }); await sleep(50); }
-  await page.screenshot({ path: SH + 'arcade-link-phone.png', timeout: 120000 }); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(250);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(250); await page.screenshot({ path: SH + 'arcade-link-phone.png', timeout: 120000 });
   check('phone: dragging a cloud to its rod links it', (await ev(() => __game.arcade.cur.links)) === 2);
   await page.tap('#arcQuit'); await sleep(150); await page.tap('#arcStickers'); await sleep(300);
   r = await ev(() => { const c = document.querySelector('.stkCard').getBoundingClientRect(), s = document.querySelector('.stk').getBoundingClientRect(); return { w: c.width, right: c.right, sw: s.width, scroll: document.querySelector('.stkCard').scrollHeight > document.querySelector('.stkCard').clientHeight, docW: document.documentElement.scrollWidth }; });

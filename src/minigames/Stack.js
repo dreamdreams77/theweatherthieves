@@ -56,7 +56,7 @@ export class Stack {
     blob(ctx, cx, sy(0) + H * 0.5, W * 0.75, H * 0.5 + u, '#f4f8ff', 7, { noGlint: true });
     // the snowman (sways with the wobble; topples when it falls)
     ctx.save(); const ang = this.fell ? this.tip * Math.min(1.5, this.fell * this.fell * 2.2) : this.wob * Math.sin(this.t * 9); const bx = this.balls[0]?.x || 0; ctx.translate(cx + bx * u, sy(0)); ctx.rotate(ang); ctx.translate(-(cx + bx * u), -sy(0));
-    this.balls.forEach((b, i) => { const y = sy(R + i * STEP), last = i === this.balls.length - 1; ctx.save(); ctx.translate(cx + b.x * u, y + u * R); ctx.scale(1 + (1 - b.sq) * 0.3, b.sq); ctx.translate(-(cx + b.x * u), -(y + u * R)); this.ball(ctx, cx + b.x * u, y, u, b.s, last, i === 1 && !last); ctx.restore(); if (last && this.balls.length > 1) { ctx.fillStyle = '#2a2230'; ctx.fillRect(cx + b.x * u - u * 0.9, y - u * R * 1.15, u * 1.8, u * 0.28); ctx.fillRect(cx + b.x * u - u * 0.6, y - u * R * 1.95, u * 1.2, u * 0.85); } });
+    this.balls.forEach((b, i) => { const y = sy(R + i * STEP), last = i === this.balls.length - 1; ctx.save(); ctx.translate(cx + b.x * u, y + u * R); ctx.scale(1 + (1 - b.sq) * 0.3, b.sq); ctx.translate(-(cx + b.x * u), -(y + u * R)); this.ball(ctx, cx + b.x * u, y, u, b.s, last, i === 1 && !last); ctx.restore(); if (last && this.balls.length > 1) { ctx.fillStyle = '#2a2230'; ctx.fillRect(cx + b.x * u - u * 0.9, y - u * R * 0.9, u * 1.8, u * 0.28); ctx.fillRect(cx + b.x * u - u * 0.6, y - u * R * 0.9 - u * 0.85, u * 1.2, u * 0.9); } });
     ctx.restore();
     for (const b of this.lost) { ctx.save(); ctx.globalAlpha = Math.min(1, b.t); ctx.translate(cx + b.x * u, sy(b.y)); ctx.rotate(b.r); this.ball(ctx, 0, 0, u, b.s, false, false); ctx.restore(); }
     // the cloud crane and the swinging / falling snowball
@@ -65,7 +65,7 @@ export class Stack {
     if (this.drop) this.ball(ctx, cx + this.drop.x * u, sy(this.drop.y), u, this.drop.s, false, false);
     for (const f of this.fx) text(ctx, f.s, cx + f.x * u, sy(f.y) + (f.t - 0.8) * 30, u * 0.8, f.c);
     text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, W - u * 2, u * 1.3, u * 0.85); text(ctx, '❄'.repeat(Math.max(0, this.lives)), u * 2.2, u * 1.3, u * 0.9, '#bfe4ff');
-    text(ctx, `height ${this.height}`, W / 2, u * 2.7, u * 0.7, '#ffffff');
+    text(ctx, `height ${this.height}`, u * 0.8, u * 2.7, u * 0.7, '#ffffff', 'left');
     if (this.t < 2.5 && !this.balls.length) text(ctx, 'Tap / Space to drop!', W / 2, H * 0.62, u * 0.95, '#fff6c0');
   }
 }

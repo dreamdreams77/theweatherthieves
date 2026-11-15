@@ -32,7 +32,7 @@ export class Arcade {
     const pt = (e) => { const r = this.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     this.cv.addEventListener('pointerdown', (e) => { if (!this.cur) return; e.preventDefault(); this.usedKeys = false; const p = pt(e); (this.clicks ??= []).push(p); this.inp.pointer = p[0]; this.inp.ptr = p; this.dragging = true; });
     this.cv.addEventListener('pointermove', (e) => { if (this.cur && this.dragging) { const p = pt(e); this.inp.pointer = p[0]; this.inp.ptr = p; } });
-    addEventListener('pointerup', (e) => { if (this.cur && this.dragging) (this.clicks ??= []).push({ up: pt(e) }); this.dragging = false; if (this.inp) { this.inp.pointer = null; this.inp.ptr = null; } });
+    const up = (e) => { if (this.cur && this.dragging) (this.clicks ??= []).push({ up: this.inp?.ptr || pt(e) }); this.dragging = false; if (this.inp) { this.inp.pointer = null; this.inp.ptr = null; } }; addEventListener('pointerup', up); addEventListener('pointercancel', up);
     addEventListener('resize', () => this.resize());
   }
   freshInput() { return { left: false, right: false, tap: false, click: null, nav: 0, pointer: null, press: [], release: null, ptr: null }; }
@@ -57,7 +57,7 @@ export class Arcade {
     for (const [px, pz] of [[0.9, 0.9], [-0.9, 0.9], [0.9, -0.9], [-0.9, -0.9]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 6), std({ color: 0xffefd8 })); p.position.set(px * 0.85, 1.0 + 0.9 * 0.5, pz * 0.85); b.add(p); }
     const pob = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 14), std({ color: 0xffb3c7, roughness: 0.7 })); pob.position.set(0, 1.35, 0); b.add(pob); this.pob = pob;
     for (const d of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), std({ color: 0x231a28 })); e.position.set(d * 0.14, 1.45, -0.37); b.add(e); }
-    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#3a2848'; c.fillRect(0, 0, 256, 64); c.font = '800 34px Baloo 2, system-ui'; c.fillStyle = '#ffe680'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ARCADE', 128, 34);
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#3a2848'; c.fillRect(0, 0, 256, 64); c.font = "800 34px 'Baloo 2', system-ui"; c.fillStyle = '#ffe680'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ARCADE', 128, 34);
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv) })); sign.position.set(0, 1.15, -1.02); sign.rotation.y = Math.PI; b.add(sign);
     const back = sign.clone(); back.position.z = 1.02; back.rotation.y = 0; b.add(back);
     g.scene.add(b); this.booth = b; this.pos = new THREE.Vector3(x, y, z); g.terrain.addCollider({ x, z, r: 1.2 });

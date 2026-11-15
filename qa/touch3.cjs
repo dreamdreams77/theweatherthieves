@@ -44,8 +44,8 @@ const { thumb } = require('./thumb.cjs');
   await T.tool(0); await T.tapSel('#bUse'); await sleep(200);
   // 5. snow on the three drifts around the jar (swap to a fuller cloud when one runs low)
   const zones = await ev(() => __game.world.jzones.map((z) => [z.x, z.base, z.z]));
-  for (let i = 0; i < 3; i++) { const z = zones[i]; const best = await ev(() => { const g = __game; return g.weather.clouds.filter((c) => !c.personal && !c.fixed).sort((a, b) => b.moisture - a.moisture)[0].id; });
-    if ((await T.S()).held !== best) { await T.tool(0); if ((await T.S()).held) await T.tapSel('#bUse'); log('grab', best, await T.grabCloud(best)); }
+  for (let i = 0; i < 3; i++) { const z = zones[i]; const best = await ev(() => { const g = __game, h = g.tools.held, p = g.player.pos; if (h && h.moisture > 0.35) return h.id; return g.weather.clouds.filter((c) => !c.personal && !c.fixed && c.moisture > 0.5).sort((a, b) => a.pos.distanceTo(p) - b.pos.distanceTo(p))[0]?.id || 'nimbus'; }); /* keep the cloud you have while it has snow left, else the nearest full one */
+    if ((await T.S()).held !== best) { await T.tool(0); if ((await T.S()).held) await T.tapSel('#bUse'); let ok = await T.grabCloud(best); if (!ok) { const alt = await ev((b) => __game.weather.clouds.filter((c) => !c.personal && !c.fixed && c.id !== b && c.moisture > 0.3).sort((a, c) => a.pos.distanceTo(__game.player.pos) - c.pos.distanceTo(__game.player.pos))[0]?.id, best); ok = await T.grabCloud(alt); } log('grab', best, ok); }
     log('zone', i, z, await ev((id) => { const c = __game.weather.clouds.find((c) => c.id === id); return { m: +c.moisture.toFixed(2), pos: c.pos.toArray().map((x) => +x.toFixed(1)), held: __game.tools.held?.id }; }, best));
     const vs = await T.viewSpot(z, 3, 8); if (vs) await T.walkTo(vs[0], vs[1], 1.0); await T.tool(4);
     await T.holdUse(z, (i) => __game.world.jzones[i].count >= 2.9, 60000, i); log('drift', i, await ev((i) => +__game.world.jzones[i].count.toFixed(2), i), 'cloud', best); }
