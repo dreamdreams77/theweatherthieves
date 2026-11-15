@@ -34,7 +34,11 @@ const { thumb } = require('./thumb.cjs');
   check('grab Nimbus', await T.grabCloud('nimbus')); const sled = await W('sled'), plate = await W('plate'), ly = await ev(() => __game.world.ledgeY);
   await T.tool(4); await T.walkTo(sled[0] - 4, sled[2] + 1, 1.0); await T.holdUse([sled[0], ly, sled[2]], () => false, 3000);
   await T.tool(2);
-  for (let k = 0; k < 14 && !(await ev(() => __game.world.plate.on)); k++) { const sp = await W('sled'); await T.walkTo(sp[0] - 3, sp[2], 0.8, 8000); await T.tool(4); await T.holdUse([sp[0], ly, sp[2]], () => false, 900); await T.tool(2); await T.holdUse([plate[0], ly, plate[2]], () => __game.world.plate.on, 1500); }
+  for (let k = 0; k < 10 && !(await ev(() => __game.world.plate.on)); k++) { const sp = await W('sled');
+    if ((await T.S()).held !== 'nimbus') await T.grabCloud('nimbus');
+    await T.walkTo(sp[0] - 3.5, sp[2], 0.8, 8000); await T.tool(4); await T.holdUse([sp[0], ly, sp[2]], () => false, 1200); /* snow over the sled */
+    await T.tool(0); await T.tapSel('#bUse'); await sleep(150); /* drop the snowing cloud right there */
+    await T.tool(2); await T.holdUse([plate[0], ly, plate[2]], () => __game.world.plate.on, 3500); log('blizzard', k, await ev(() => ({ x: +__game.world.sled.pos.x.toFixed(1), bl: +__game.world.sled.blizzard.toFixed(2) }))); }
   check('blizzard (snow + wind) slides the sled onto the plate', await ev(() => __game.world.plate.on), 'sledX=' + (await ev(() => __game.world.sled.pos.x.toFixed(1))));
   await T.until(() => __game.world.doorOpen, 8000); check('the plate opens the way to the jar', await ev(() => !!__game.world.doorOpen));
   await T.tool(0); await T.tapSel('#bUse'); await sleep(200);
@@ -43,9 +47,9 @@ const { thumb } = require('./thumb.cjs');
   for (let i = 0; i < 3; i++) { const z = zones[i]; const best = await ev(() => { const g = __game; return g.weather.clouds.filter((c) => !c.personal && !c.fixed).sort((a, b) => b.moisture - a.moisture)[0].id; });
     if ((await T.S()).held !== best) { await T.tool(0); if ((await T.S()).held) await T.tapSel('#bUse'); await T.grabCloud(best); }
     const vs = await T.viewSpot(z, 3, 8); if (vs) await T.walkTo(vs[0], vs[1], 1.0); await T.tool(4);
-    await T.holdUse(z, (i) => __game.world.jzones[i].count >= 0.98, 45000, i); log('drift', i, await ev((i) => +__game.world.jzones[i].count.toFixed(2), i), 'cloud', best); }
+    await T.holdUse(z, (i) => __game.world.jzones[i].count >= 2.9, 60000, i); log('drift', i, await ev((i) => +__game.world.jzones[i].count.toFixed(2), i), 'cloud', best); }
   const jz = await ev(() => __game.world.jzones.map((z) => +z.count.toFixed(2)));
-  check('snow piles on all three drifts around the jar', jz.every((c) => c >= 0.98), JSON.stringify(jz));
+  check('snow piles on all three drifts around the jar', jz.every((c) => c >= 2.9), JSON.stringify(jz));
   const fin = await T.until(() => (JSON.parse(localStorage.getItem('weather-thieves-progress-v1') || '{}').done || []).includes(3), 150000);
   await T.until(() => !document.getElementById('end').classList.contains('hidden'), 20000);
   check('finale plays and chapter 3 is saved as complete, end card up', fin && (await ev(() => !document.getElementById('end').classList.contains('hidden'))));

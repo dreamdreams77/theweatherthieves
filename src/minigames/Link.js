@@ -33,7 +33,7 @@ export class Link {
     const g = this.geo(); this.t += dt;
     for (const f of this.fx) { f.t -= dt; f.y -= dt * 30; } this.fx = this.fx.filter((f) => f.t > 0); for (const b of this.bolts) b.t -= dt; this.bolts = this.bolts.filter((b) => b.t > 0);
     if (this.dead) { this.endT += dt; return; }
-    this.time -= dt; this.next -= dt; if (this.next <= 0) { this.next = Math.max(0.75, 1.7 - this.t * 0.022); this.spawn(); }
+    this.time -= dt; this.next -= dt; if (this.next <= 0 || this.clouds.length === 0) { this.next = Math.max(0.7, 1.35 - this.t * 0.016); this.spawn(); }
     for (const c of this.clouds) { c.left -= dt; c.in = Math.min(1, c.in + dt * 4); c.x += Math.sin(this.t * 0.8 + c.s) * dt * 0.006; }
     for (const c of [...this.clouds]) if (c.left <= 0) { this.clouds = this.clouds.filter((x) => x !== c); this.lives--; this.fx.push({ x: c.x * g.W, y: c.y * g.H, t: 0.8, s: 'Fizzle…', c: '#c8b8d8' }); this.puff([c.x * g.W, c.y * g.H]); this.a.sfx('bad'); if (this.sel === c) this.sel = null; }
     for (const k of inp.press || []) {

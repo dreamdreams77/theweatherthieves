@@ -36,7 +36,7 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) 
 
   // --- Lightning Link: arrow keys zap the highlighted cloud; mouse drag from a cloud to its rod
   await page.keyboard.press('Escape'); await sleep(150); await page.click('.arcGame[data-id="link"]'); await page.waitForFunction(() => __game.arcade.cur?.constructor.id === 'link', null, { timeout: 20000 });
-  for (let i = 0; i < 8; i++) { const c = await ev(() => __game.arcade.cur.current()?.c ?? -1); if (c < 0) { await sleep(250); continue; } await page.keyboard.press(LANE_KEYS[c]); await sleep(200); }
+  for (let i = 0, t0 = Date.now(); i < 30 && Date.now() - t0 < 15000 && (await ev(() => __game.arcade.cur.links)) < 5; i++) { const c = await ev(() => __game.arcade.cur.current()?.c ?? -1); if (c < 0) { await sleep(250); continue; } await page.keyboard.press(LANE_KEYS[c]); await sleep(200); }
   r = await ev(() => ({ l: __game.arcade.cur.links, s: __game.arcade.cur.score, lives: __game.arcade.cur.lives }));
   check('Lightning Link: keys zap clouds into matching rods', r.l >= 4 && r.s > 4 && r.lives === 3, JSON.stringify(r));
   await page.waitForFunction(() => __game.arcade.cur.clouds.length > 0, null, { timeout: 20000 });
@@ -60,7 +60,7 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) 
   // --- simulated achievements in localStorage -> reload -> stickers unlocked, persisted, rendered
   const before = (await saved(page)).stickers;
   await ev((k) => { const d = JSON.parse(localStorage.getItem(k)); Object.assign(d, { trials: { 1: { time: 60, medal: 'gold' }, 2: { time: 90, medal: 'silver' } }, almanac: ['rainbow', 'hail', 'fog', 'skate', 'blizzard', 'charge'], done: [1, 2], memories: Array.from({ length: 12 }, (_, i) => 'm' + i) }); d.arcade.catch = 60; d.arcade.glide = 5; d.stickers.push(42); localStorage.setItem(k, JSON.stringify(d)); }, KEY);
-  await page.reload(); await page.waitForFunction(() => window.__game && __game.state === 'title', null, { timeout: 120000 });
+  await page.reload({ timeout: 120000 }); await page.waitForFunction(() => window.__game && __game.state === 'title', null, { timeout: 120000 });
   const after = (await saved(page)).stickers, want = ['arc-catch-gold', 'arc-glide-bronze', 'trial-1', 'trial-2', 'alm-1', 'alm-5', 'ch-1', 'ch-2', 'mem-1', 'mem-10'], never = ['arc-glide-silver', 'alm-all', 'ch-3', 'trial-gold', 'mem-all', 'arc-match-bronze'];
   check('stickers earned before the reload persist', before.every((x) => after.includes(x)) && !after.includes(42), JSON.stringify(after));
   check('simulated achievements unlock the matching stickers on load (and nothing more)', want.every((x) => after.includes(x)) && never.every((x) => !after.includes(x)), JSON.stringify(after));
