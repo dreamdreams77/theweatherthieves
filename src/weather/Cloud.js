@@ -105,11 +105,11 @@ export class Cloud {
     if (!act && this.raining < 0.03) { this.rainMesh.count = 0; for (const d of D) d.a = 0; }
   }
   /** does the rain cylinder cover (x,y,z)? returns 0..1 intensity */
-  snowAt(x, y, z) { if (this.precip !== 'snow') return 0; const sv = this.precip; this.precip = 'rain'; const v = this.rainAt(x, y, z); this.precip = sv; return v; }
-  rainAt(x, y, z) {
+  snowAt(x, y, z, rad = 0) { if (this.precip !== 'snow') return 0; const sv = this.precip; this.precip = 'rain'; const v = this.rainAt(x, y, z, rad); this.precip = sv; return v; }
+  rainAt(x, y, z, rad = 0) { // rad: the target's own size, so rain only has to reach its edge (like sun and frost)
     if (this.precip === 'snow') return 0;
     if (this.raining < 0.1 || y > this.pos.y - 0.3) return 0;
-    const d = Math.hypot(x - this.pos.x, z - this.pos.z), r = this.footprint; if (d > r) return 0;
+    const d = Math.max(0, Math.hypot(x - this.pos.x, z - this.pos.z) - rad), r = this.footprint; if (d > r) return 0;
     return this.raining * (1 - (d / r) ** 3) * clamp(this.density, 0.5, 1.8);
   }
 }

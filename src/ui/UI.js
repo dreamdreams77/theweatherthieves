@@ -71,7 +71,7 @@ export class UI {
     this.q('#mute').addEventListener('click', () => { game.audio.start(); game.audio.setMuted(!game.audio.muted); this.q('#mute').classList.toggle('off', game.audio.muted); });
     this.q('#helpBtn').addEventListener('click', () => this.q('#help').classList.remove('hidden')); this.q('#helpClose').addEventListener('click', () => this.q('#help').classList.add('hidden'));
     this.q('#endClose').addEventListener('click', () => this.q('#end').classList.add('hidden'));
-    this.q('#endNext').addEventListener('click', () => { this.q('#end').classList.add('hidden'); game.loadChapter(game.chapterNo + 1); });
+    this.q('#endNext').addEventListener('click', () => { if (performance.now() - (this.endAt || 0) < 1500) return; /* a tap meant for the last dialogue line must not skip the end card */ this.q('#end').classList.add('hidden'); game.loadChapter(game.chapterNo + 1); });
     this.q('#askFen').addEventListener('click', () => game.askFen());
     this.q('#pArcade').addEventListener('click', () => { game.pause(false); game.arcade.openMenu(); });
     this.q('#pauseBtn').addEventListener('click', () => game.pause(!game.paused)); this.q('#pResume').addEventListener('click', () => game.pause(false));
@@ -144,5 +144,6 @@ export class UI {
     const al = this.q('#almanac'); al.innerHTML = ''; const got = Progress.data.almanac || []; for (const [id, a] of Object.entries(ALMANAC)) { const d = document.createElement('div'); d.className = 'alm' + (got.includes(id) ? '' : ' locked'); d.innerHTML = `<b>${got.includes(id) ? a.name : '???'}</b><span>${got.includes(id) ? a.desc : 'Try: ' + a.hint}</span>`; al.appendChild(d); }
   }
   showEnd(stats, chapterDone) {
+    this.endAt = performance.now();
     const nxt = CHAPTERS[(this.game.chapterNo || 1) + 1]; const b = this.q('#endNext'); b.style.display = nxt ? '' : 'none'; if (nxt) b.textContent = 'Next: ' + nxt.title; if (chapterDone) { this.q('#end .eyebrow').textContent = 'Chapter ' + this.game.chapterNo + ' complete'; this.q('#end h1').textContent = this.game.chapterTitle() + ' is saved'; if (chapterDone === 4) { this.q('#end .eyebrow').textContent = 'The End'; this.q('#end h1').textContent = 'The weather is home'; this.q('#end p').innerHTML = 'Sunshine, rain, snow and thunder are back — and so is the sky’s memory.<br>Juno, Fen and Wren will look after them together.'; } } this.q('#endStats').textContent = stats; this.q('#end').classList.remove('hidden'); }
 }

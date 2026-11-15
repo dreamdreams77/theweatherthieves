@@ -50,8 +50,8 @@ export class WeatherSystem {
       if (d < b.r + pad) s = Math.max(s, b.power * (1 - d / (b.r + pad) * 0.5));
     } return s;
   }
-  snowAt(pos) { let r = 0; for (const c of this.clouds) r = Math.max(r, c.snowAt(pos.x, pos.y, pos.z)); return r; }
-  rainAt(pos) { let r = 0; for (const c of this.clouds) r = Math.max(r, c.rainAt(pos.x, pos.y, pos.z)); return r; }
+  snowAt(pos, rad = 0) { let r = 0; for (const c of this.clouds) r = Math.max(r, c.snowAt(pos.x, pos.y, pos.z, rad)); return r; }
+  rainAt(pos, rad = 0) { let r = 0; for (const c of this.clouds) r = Math.max(r, c.rainAt(pos.x, pos.y, pos.z, rad)); return r; }
   update(dt, t, camPos) {
     this.time = t;
     const g = this.gust, f = this.frost;
@@ -61,7 +61,7 @@ export class WeatherSystem {
     const w = this._w ??= { rain: 0, wind: new THREE.Vector3(), sun: 0, frost: 0, breeze: this.breeze };
     for (const o of this.reactives) {
       if (o.enabled === false) continue;
-      w.rain = this.rainAt(o.pos); w.snow = this.snowAt(o.pos); w.wind.copy(this.force(o.pos, o.radius || 0)); w.sun = this.sunAt(o.pos, o.radius || 0); w.frost = this.frostAt(o.pos, o.radius || 0);
+      w.rain = this.rainAt(o.pos, (o.radius || 0) * 0.6); w.snow = this.snowAt(o.pos, (o.radius || 0) * 0.6); w.wind.copy(this.force(o.pos, o.radius || 0)); w.sun = this.sunAt(o.pos, o.radius || 0); w.frost = this.frostAt(o.pos, o.radius || 0);
       o.weather(dt, w);
     }
     // fx
