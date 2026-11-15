@@ -22,9 +22,11 @@ import { Post } from '../gfx/Post.js';
 import { applyClay, clayMood } from '../gfx/Clay.js';
 import { Trials, TRIALS } from './Trials.js';
 import { Arcade } from '../minigames/Arcade.js';
+import { Stickers } from './Stickers.js';
 import { Haptics } from './Haptics.js';
 import { Assets } from '../gfx/Assets.js';
 import { CHAPTERS } from '../chapters/index.js';
+import { Opening } from '../story/Opening.js';
 
 export class Game {
   constructor(canvas) {
@@ -52,14 +54,14 @@ export class Game {
     Progress.load(); const before0 = new Set(this.scene.children);
     const r0 = new Set(this.weather.reactives); this.world = new SunkenSky(this); const worldR = new Set(this.weather.reactives.filter((r) => !r0.has(r))); this.worldObjs = this.scene.children.filter((c) => !before0.has(c)); progress?.(0.7);
     this.player = new Player(this); this.companion = new Companion(this); this.fen = this.companion; this.tools = new Tools(this);
-    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.arcade = new Arcade(this);
+    this.ui = new UI(this); this.say = new Say(this); this.combos = new Combos(this); this.trials = new Trials(this); this.arcade = new Arcade(this); this.stickers = new Stickers(this);
     { const sfx = this.audio.sfx.bind(this.audio); this.audio.sfx = (n) => { Haptics.sfx(n); return sfx(n); }; const bolt = this.weather.bolt.bind(this.weather); this.weather.bolt = (...a) => { Haptics.sfx('bolt'); return bolt(...a); }; } this.narr = new Narrative(this); this.puzzles = { onJar: () => this.narr.onJar(), onGrab: (c) => this.narr.onGrab(c) }; this.story = { onToolFirstUse: () => {} };
     this.world.fenCloud.owner = this.companion; this.narr.init(); this.weather.keep = this.weather.reactives.filter((r) => !worldR.has(r)); this.trials.setup(); this.arcade.setup(); this.ui.setTool(0);
     this.setRestore(this.narr.flags.freed ? 1 : this.narr.flags.melted ? 0.5 : this.narr.flags.p1 ? 0.2 : 0, true);
     this.ui.showTouch(this.input.touchMode || isTouch());
     // resume position
     const ri = this.narr.resumeIsland; if (ri) { const sp = this.spawnFor(ri); this.player.pos.copy(sp); this.player.safe.copy(sp); this.companion.pos.copy(sp).add(new THREE.Vector3(2, 0, 2)); }
-    this.rig.snap(this.player.pos); this.camera.position.set(-18, 12, 30); progress?.(1);
+    this.rig.snap(this.player.pos); this.camera.position.set(-18, 12, 30); progress?.(1); Opening.install(this);
     this.state = 'title'; this.titleT = 0;
   }
   /** Tear down the current chapter world and build another one (player, companion, tools, audio and UI persist). */
@@ -138,7 +140,8 @@ export class Game {
     const resume = Math.min(4, Progress.data.chapter || 1);
     if (resume > 1 && CHAPTERS[resume]) { this.state = 'play'; this.loadChapter(resume); return; }
     const f = this.narr.flags;
-    if (!f.intro) { f.intro = true; this.state = 'play'; this.dialogue(S.INTRO, { onEnd: () => { this.ui.setTool(0); this.ui.toast('Tip: press 1, then click the little cloud above Fen to carry it.', 8000); this.narr.save(); } }); }
+    if (!f.intro) { f.intro = true; this.state = 'play'; const intro = () => this.dialogue(S.INTRO, { onEnd: () => { this.ui.setTool(0); this.ui.toast('Tip: press 1, then click the little cloud above Fen to carry it.', 8000); this.narr.save(); } });
+      if (Opening.wanted(this) && !Progress.data.flags?.openingSeen) { Opening.play(this, () => { (Progress.data.flags ??= {}).openingSeen = true; Progress.save(); intro(); this.state = this.ui.dlg.active ? 'dialogue' : 'play'; }); return; } intro(); } // fresh game: opening cinematic first, then the intro dialogue
     else { this.state = 'play'; this.player.locked = false; }
     this.state = this.ui.dlg.active ? 'dialogue' : 'play';
   }
@@ -161,10 +164,11 @@ export class Game {
     this.companion.update(dt, t, this.player);
     const env = this.cloudEnv(); this.weather.clouds.forEach((c) => c.update(dt, t, env));
     this.weather.update(dt, t, this.camera.position); this.world.update(dt, t); this.narr.update(dt, t); this.combos.update(dt); this.trials.update(dt, t); this.arcade.update(dt, t); this.reactToWeather(dt);
+    this.opening?.update(dt);
     // camera
     if (this.state === 'dialogue' || this.cinematic) { input.orbit.set(0, 0); }
     this.rig.update(dt, this.player.pos, input, this.player.vel, this.terrain); this.camera.updateMatrixWorld();
-    this.lookTarget = this.camera.position;
+    this.lookTarget = this.opening?.lookAt || this.camera.position;
     this.sky.update(t, this.camera.position); if (this.weather.flash > 0) { this.hemi.intensity = (this.hemiBase ?? this.hemi.intensity) + (Settings.data.reduceMotion ? 0 : Math.min(1, this.weather.flash) * 2.2); this.flashing = true; } else if (this.flashing) { this.flashing = false; this.applyMood(); }
     // shadows follow player (snap texels)
     const target = this.player.pos, sd = this.sunDir; const k = 2 * this.sun.shadow.camera.right / this.quality.shadow; const sx = Math.round(target.x / k) * k, sy = Math.round(target.y / k) * k, sz = Math.round(target.z / k) * k;

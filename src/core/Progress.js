@@ -2,8 +2,10 @@
 const KEY = 'weather-thieves-progress-v1';
 export const Progress = {
   data: { chapter: 1, done: [], memories: [], flags: {} },
-  load() { try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && typeof d === 'object') { const o = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}); const tr = o(d.trials); for (const k in tr) if (!tr[k] || typeof tr[k].time !== 'number') delete tr[k]; this.data = { ...d, chapter: Math.max(1, +d.chapter || 1), done: Array.isArray(d.done) ? d.done : [], memories: Array.isArray(d.memories) ? d.memories : [], flags: o(d.flags), trials: tr, arcade: o(d.arcade), almanac: Array.isArray(d.almanac) ? d.almanac : [] }; } } catch {} return this.data; },
-  save() { try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch {} },
+  load() { try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && typeof d === 'object') { const o = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}); const tr = o(d.trials); for (const k in tr) if (!tr[k] || typeof tr[k].time !== 'number') delete tr[k]; this.data = { ...d, chapter: Math.max(1, +d.chapter || 1), done: Array.isArray(d.done) ? d.done : [], memories: Array.isArray(d.memories) ? d.memories : [], flags: o(d.flags), trials: tr, arcade: o(d.arcade), almanac: Array.isArray(d.almanac) ? d.almanac : [], stickers: Array.isArray(d.stickers) ? [...new Set(d.stickers.filter((x) => typeof x === 'string'))] : [] }; const ar = this.data.arcade; for (const k in ar) if (typeof ar[k] !== 'number' || !isFinite(ar[k])) delete ar[k]; } } catch {} return this.data; },
+  /** called after every save (the Sticker Book re-checks its unlock rules here) */
+  onSave: null,
+  save() { try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch {} try { this.onSave?.(); } catch (e) { console.warn(e); } },
   reset() { this.data = { chapter: 1, done: [], memories: [], flags: {} }; try { localStorage.removeItem(KEY); localStorage.removeItem('weather-thieves-save-v1'); } catch {} },
   complete(n) { if (!this.data.done.includes(n)) this.data.done.push(n); this.data.chapter = Math.max(this.data.chapter, n + 1); this.data.unlocked = Math.max(this.data.unlocked || 1, Math.min(4, n + 1)); this.save(); },
   setChapter(n) { this.data.chapter = n; this.data.unlocked = Math.max(this.data.unlocked || 1, n); this.save(); },

@@ -7,36 +7,43 @@ import { setBoil, text } from './clay2d.js';
 import { Catch } from './Catch.js';
 import { Glide } from './Glide.js';
 import { Match } from './Match.js';
+import { Rhythm } from './Rhythm.js';
+import { Stack } from './Stack.js';
+import { Link } from './Link.js';
 
 const _free = (o) => o.traverse((m) => { m.geometry?.dispose(); [].concat(m.material || []).forEach((x) => { x.map?.dispose(); x.dispose(); }); });
-export const GAMES = [Catch, Glide, Match];
+Catch.medals = [15, 30, 50]; Glide.medals = [3, 8, 15]; Match.medals = [30, 70, 100];
+export const GAMES = [Catch, Glide, Match, Rhythm, Stack, Link];
+export const MEDALS = ['bronze', 'silver', 'gold'];
+/** highest medal index (0..2) a score earns in game G, or -1 */
+export const medalOf = (G, s) => (G.medals || []).reduce((m, t, i) => (s >= t ? i : m), -1);
 
-/** The Puffkin Arcade: a striped booth in every chapter that opens three clay-style mini games in an overlay. */
+/** The Puffkin Arcade: a striped booth in every chapter that opens the clay-style mini games in an overlay. */
 export class Arcade {
   constructor(game) {
     this.game = game; this.open = false; this.cur = null; this.booth = null; this.inp = this.freshInput(); this.usedKeys = false;
     const el = document.createElement('div'); el.id = 'arcade'; el.className = 'hidden'; el.innerHTML = `<canvas id="arcadeCv"></canvas>
-      <div id="arcMenu" class="panel"><h2>Puffkin Arcade</h2><p class="sub">Run by Pib's cousin Pob. Tickets are free; pride is not.</p><div id="arcList"></div><button id="arcClose" class="pill">Back to the world <kbd>Esc</kbd></button></div>
+      <div id="arcMenu" class="panel"><h2>Puffkin Arcade</h2><p class="sub">Run by Pib's cousin Pob. Tickets are free; pride is not.</p><div id="arcList"></div><div class="row"><button id="arcStickers" class="pill">Sticker book</button><button id="arcClose" class="pill">Back to the world <kbd>Esc</kbd></button></div></div>
       <div id="arcEnd" class="panel hidden"><h2 id="arcEndT"></h2><p id="arcEndS"></p><div class="row"><button id="arcAgain" class="pill">Play again <kbd>Space</kbd></button><button id="arcBack" class="pill">Arcade menu</button></div></div>
       <button id="arcQuit" class="pill hidden" aria-label="Quit mini game">✕</button>`;
     document.body.appendChild(el); this.el = el; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d');
-    el.querySelector('#arcClose').onclick = () => this.close(); el.querySelector('#arcQuit').onclick = () => this.menu(); el.querySelector('#arcBack').onclick = () => this.menu(); el.querySelector('#arcAgain').onclick = () => this.play(this.last);
+    el.querySelector('#arcClose').onclick = () => this.close(); el.querySelector('#arcStickers').onclick = () => this.game.stickers?.open(); el.querySelector('#arcQuit').onclick = () => this.menu(); el.querySelector('#arcBack').onclick = () => this.menu(); el.querySelector('#arcAgain').onclick = () => this.play(this.last);
     addEventListener('keydown', (e) => this.key(e, true), true); addEventListener('keyup', (e) => this.key(e, false), true);
     const pt = (e) => { const r = this.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-    this.cv.addEventListener('pointerdown', (e) => { if (!this.cur) return; e.preventDefault(); this.usedKeys = false; const p = pt(e); (this.clicks ??= []).push(p); this.inp.pointer = p[0]; this.dragging = true; });
-    this.cv.addEventListener('pointermove', (e) => { if (this.cur && this.dragging) this.inp.pointer = pt(e)[0]; });
-    addEventListener('pointerup', () => { this.dragging = false; if (this.inp) this.inp.pointer = null; });
+    this.cv.addEventListener('pointerdown', (e) => { if (!this.cur) return; e.preventDefault(); this.usedKeys = false; const p = pt(e); (this.clicks ??= []).push(p); this.inp.pointer = p[0]; this.inp.ptr = p; this.dragging = true; });
+    this.cv.addEventListener('pointermove', (e) => { if (this.cur && this.dragging) { const p = pt(e); this.inp.pointer = p[0]; this.inp.ptr = p; } });
+    addEventListener('pointerup', (e) => { if (this.cur && this.dragging) (this.clicks ??= []).push({ up: pt(e) }); this.dragging = false; if (this.inp) { this.inp.pointer = null; this.inp.ptr = null; } });
     addEventListener('resize', () => this.resize());
   }
-  freshInput() { return { left: false, right: false, tap: false, click: null, nav: 0, pointer: null }; }
+  freshInput() { return { left: false, right: false, tap: false, click: null, nav: 0, pointer: null, press: [], release: null, ptr: null }; }
   key(e, down) {
-    if (!this.open) return; e.stopImmediatePropagation(); if (down) e.preventDefault(); const c = e.code;
+    if (!this.open || this.game.stickers?.isOpen) return; e.stopImmediatePropagation(); if (down) e.preventDefault(); const c = e.code;
     if (c === 'ArrowLeft' || c === 'KeyA') { this.inp.left = down; if (down) this.inp.nav = -1; } if (c === 'ArrowRight' || c === 'KeyD') { this.inp.right = down; if (down) this.inp.nav = 1; }
     if (down && (c === 'ArrowUp' || c === 'KeyW')) this.inp.nav = -4; if (down && (c === 'ArrowDown' || c === 'KeyS')) this.inp.nav = 4; if (down && c.startsWith('Arrow')) this.usedKeys = true;
-    if (!down || e.repeat) return;
+    if (!down || e.repeat) return; if (this.cur && !this.ended) this.inp.press.push(c);
     if (c === 'Escape') { if (this.cur) this.menu(); else this.close(); return; }
     if (c === 'Space' || c === 'Enter' || c === 'KeyF') { if (this.cur && !this.ended) this.inp.tap = true; else if (this.ended) this.play(this.last); }
-    if (!this.cur && /^Digit[1-3]$/.test(c)) this.play(GAMES[+c.slice(5) - 1]);
+    const dg = /^(?:Digit|Numpad)([1-9])$/.exec(c); if (!this.cur && dg && GAMES[+dg[1] - 1]) this.play(GAMES[+dg[1] - 1]);
   }
   best(id) { return (Progress.data.arcade || {})[id] || 0; }
   /** booth beside the chapter's trial stone */
@@ -66,19 +73,19 @@ export class Arcade {
   close() { this.open = false; this.game.arcadeOpen = false; this.cur = null; this.el.classList.add('hidden'); }
   menu() {
     this.cur = null; this.ended = false; this.q('#arcEnd').classList.add('hidden'); this.q('#arcQuit').classList.add('hidden'); this.q('#arcMenu').classList.remove('hidden');
-    const L = this.q('#arcList'); L.innerHTML = ''; GAMES.forEach((G, i) => { const b = document.createElement('button'); b.className = 'arcGame'; b.dataset.id = G.id; b.innerHTML = `<b>${i + 1}. ${G.title}</b><span>${G.blurb}</span><small>${G.howto} · best ${this.best(G.id)}</small>`; b.onclick = () => this.play(G); L.appendChild(b); });
+    const L = this.q('#arcList'); L.innerHTML = ''; GAMES.forEach((G, i) => { const b = document.createElement('button'); b.className = 'arcGame'; b.dataset.id = G.id; const m = medalOf(G, this.best(G.id)); b.innerHTML = `<b>${i + 1}. ${G.title}${m >= 0 ? ` <i class="arcMedal ${MEDALS[m]}">${MEDALS[m]}</i>` : ''}</b><span>${G.blurb}</span><small>${G.howto} · best ${this.best(G.id)}</small>`; b.onclick = () => this.play(G); L.appendChild(b); });
   }
   play(G) { this.last = G; this.cur = new G(this); this.ended = false; this.inp = this.freshInput(); this.clicks = []; this.q('#arcMenu').classList.add('hidden'); this.q('#arcEnd').classList.add('hidden'); this.q('#arcQuit').classList.remove('hidden'); this.sfx('flip'); }
   step(dt) {
     const c = this.cur, ctx = this.ctx; this.t = (this.t || 0) + dt; setBoil(this.t, Settings.data.reduceMotion);
     if (!c) { ctx.fillStyle = '#21182c'; ctx.fillRect(0, 0, this.w, this.h); return; }
-    if (!this.ended) { const q = this.clicks; if (q?.length && !c.busy) { this.inp.click = q.shift(); this.inp.tap = true; } c.update(dt, this.inp); this.inp.tap = false; this.inp.click = null; this.inp.nav = 0; if (c.over) this.end(); }
+    if (!this.ended) { const q = this.clicks; if (q?.length && !c.busy) { const ev = q.shift(); if (ev.up) this.inp.release = ev.up; else { this.inp.click = ev; this.inp.tap = true; } } c.update(dt, this.inp); this.inp.tap = false; this.inp.click = null; this.inp.nav = 0; this.inp.press = []; this.inp.release = null; if (c.over) this.end(); }
     c.draw(ctx);
   }
   end() {
     const c = this.cur, id = this.last.id, prev = this.best(id), best = c.score > prev || !(id in (Progress.data.arcade || {})); this.ended = true; this.lastScore = c.score;
     if (best) { (Progress.data.arcade ??= {})[id] = c.score; Progress.save(); }
-    this.q('#arcEndT').textContent = best && c.score > 0 ? 'New best!' : 'Nice try!'; this.q('#arcEndS').textContent = `${this.last.title}: ${c.score} point${c.score === 1 ? '' : 's'}${prev && !best ? ` · best ${prev}` : ''}`;
+    this.q('#arcEndT').textContent = best && c.score > 0 ? 'New best!' : 'Nice try!'; const md = medalOf(this.last, c.score); this.q('#arcEndS').textContent = `${this.last.title}: ${c.score} point${c.score === 1 ? '' : 's'}${md >= 0 ? ` · ${MEDALS[md]} medal` : ''}${prev && !best ? ` · best ${prev}` : ''}`;
     this.q('#arcEnd').classList.remove('hidden'); this.sfx(best ? 'gold' : 'end');
     const g = this.game, n = (Progress.data.arcade || {}); if (Object.keys(n).length === GAMES.length && !Progress.data.flags?.arcadeAll) { (Progress.data.flags ??= {}).arcadeAll = true; Progress.save(); g.ui.toast('You have played every arcade game! Pob is delighted.'); }
   }
