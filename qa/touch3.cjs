@@ -11,7 +11,7 @@ const { thumb } = require('./thumb.cjs');
   check('Continue drops a touch player into chapter 3', await ev(() => __game.chapterNo === 3 && __game.state === 'play'));
   await T.calibrate();
   // 1. freeze the river segment by segment, stepping onto each
-  await T.tool(4); const segs = await ev(() => __game.world.segs.map((s) => [s.x, 0, s.z]));
+  await T.tool(4); const segs = await ev(() => __game.world.segs.map((s) => [s.x, s.y, s.z]));
   await T.walkTo(0, -16.5, 1.0);
   for (let i = 0; i < segs.length; i++) { const s = segs[i]; await T.holdUse(await T.surf(s), (i) => __game.world.segs[i].frozen > 0.9, 30000, i); log('seg', i, await ev((i) => +__game.world.segs[i].frozen.toFixed(2), i)); await T.walkTo(s[0], s[2] + 0.4, 0.8, 15000); }
   const fz = await ev(() => __game.world.segs.map((s) => +s.frozen.toFixed(2)));
