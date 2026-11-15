@@ -18,7 +18,7 @@ async function thumb(page, ctx) {
   const reticle = () => ev(() => { const r = __game.tools.reticle; return { x: (r.x * 0.5 + 0.5) * innerWidth, y: (-r.y * 0.5 + 0.5) * innerHeight }; });
   const W = () => ev(() => [innerWidth, innerHeight]);
   // --- camera drag on open screen space (upper middle), sign-calibrated once
-  let sx = 0, sy = 0; const dragCam = async (dx, dy) => { const [w, h] = await W(); const x0 = w * 0.5, y0 = h * 0.42; const id = await down(x0, y0); const n = 5; for (let i = 1; i <= n; i++) { await move(id, x0 + (dx * i) / n, y0 + (dy * i) / n); await sleep(30); } await up(id); await sleep(80); };
+  let sx = 0, sy = 0; const dragCam = async (dx, dy) => { if (!Number.isFinite(dx)) dx = 0; if (!Number.isFinite(dy)) dy = 0; const [w, h] = await W(); const x0 = w * 0.5, y0 = h * 0.42; const id = await down(x0, y0); const n = 5; for (let i = 1; i <= n; i++) { await move(id, x0 + (dx * i) / n, y0 + (dy * i) / n); await sleep(30); } await up(id); await sleep(80); };
   const calibrate = async () => { const a = await ev(() => [__game.rig.yaw, __game.rig.pitch]); await dragCam(60, 0); await sleep(150); const b = await ev(() => [__game.rig.yaw, __game.rig.pitch]); await dragCam(-60, 0); await dragCam(0, 40); await sleep(150); const c = await ev(() => [__game.rig.yaw, __game.rig.pitch]); await dragCam(0, -40); sx = (b[0] - a[0]) / 60; sy = (c[1] - b[1]) / 40; return { sx, sy }; };
   // aim: rotate the camera until the reticle sits on pt (screen-space error -> drag)
   const aimErr = (pt) => ev((p) => { const a = __game.tools.aim.point; return Math.hypot(a.x - p[0], a.z - p[2]); }, pt);
@@ -60,7 +60,7 @@ async function thumb(page, ctx) {
         for (let k = 1; k < 20; k++) { const f = k / 20, sx = x + (pt[0] - x) * f, sz = z + (pt[2] - z) * f, sy = ey + (pt[1] + 0.4 - ey) * f; if (T.topAt(sx, sz) > sy + 0.05) { clear = false; break; } }
         if (!clear) continue; const cost = Math.abs(gy - me.y) * 12 + Math.hypot(x - me.x, z - me.z) * 0.2 + Math.abs(r - (8 + Math.max(0, pt[1] - gy) * 1.2)); if (!best || cost < best[2]) best = [x, z, cost, gy]; }
       return best; }, [pt, rMin, rMax, sameLevel]);
-  const surf = (pt) => ev((p) => [p[0], __game.terrain.topAt(p[0], p[2]), p[2]], pt); // the walkable/roof surface right under a point
+  const surf = (pt) => ev((p) => { const y = __game.terrain.topAt(p[0], p[2]); return [p[0], Number.isFinite(y) && y > -50 ? y : p[1], p[2]]; }, pt); // the walkable/roof surface right under a point
   return { surf, viewSpot, down, move, up, tap, tapSel, center, S, flush, proj, aimAt, walkTo, holdUse, holdBtn, tool, grabCloud, calibrate, until, ev, stickRelease };
 }
 module.exports = { thumb };
