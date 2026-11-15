@@ -5,7 +5,7 @@ const SH = 'qa/shots/', KEY = 'weather-thieves-progress-v1', LANE_KEYS = ['Arrow
 const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '{}'), KEY);
 (async () => {
   let { browser, page, logs } = await launch({ w: 1100, h: 620 });
-  let ev = (f, a) => page.evaluate(f, a);
+  let ev = (f, a) => page.evaluate(f, a); global.DBG = async () => [logs, await page.evaluate(() => JSON.stringify({ open: __game.arcade.open, cur: __game.arcade.cur?.constructor.id, ended: __game.arcade.ended, t: __game.arcade.t, st: __game.arcade.cur?.state, dead: __game.arcade.cur?.dead, endT: __game.arcade.cur?.endT })).catch((e) => e.message)];
   await page.click('#begin'); await sleep(400); for (let i = 0; i < 40 && (await ev(() => __game.ui.dlg.active)); i++) { await page.keyboard.press('Enter'); await sleep(110); }
   await ev(() => __game.arcade.openMenu()); await sleep(200);
   const m = await ev(() => [...document.querySelectorAll('.arcGame')].map((b) => b.dataset.id));
@@ -109,4 +109,4 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) 
   check('phone: Close button shuts the book', await ev(() => document.getElementById('stickerBook').classList.contains('hidden')));
   check('no console errors (phone)', logs.length === 0, logs.slice(0, 3).join(' | '));
   const bad = results.filter((x) => !x.ok); console.log(bad.length ? 'RESULT: ' + bad.length + ' FAILED' : 'RESULT: ALL ' + results.length + ' CHECKS PASSED'); await browser.close(); process.exit(bad.length ? 1 : 0);
-})().catch((e) => { console.error('TEST CRASH', e); process.exit(2); });
+})().catch(async (e) => { console.error('TEST CRASH', e); try { console.error(await global.DBG?.()); } catch {} process.exit(2); });

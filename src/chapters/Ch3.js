@@ -66,8 +66,8 @@ export class ForestWorld extends ChapterBase {
     farScenery(this, { seed: 91, colors: [0xe8f4ff, 0x4f8a78, 0xc0dcf0], grass: snow, tint: [0xa8c8e8, 0xd8e8f8], snowy: true });
   }
   river() {
-    const { scene, terrain } = this; const y = 0; this.water = new THREE.Mesh(new THREE.PlaneGeometry(40, 9).rotateX(-Math.PI / 2), waterMaterial()); this.water.position.set(0, -0.3, -24.5); this.water.material.uniforms.uRain.value = 0.2; scene.add(this.water);
-    const zs = [-20.4, -24.5, -28.6]; zs.forEach((z, i) => { const s = new IceSeg(scene, terrain, 0, z, 6, 4.3, 0.0); this.weather.register({ pos: new THREE.Vector3(0, y, z), radius: 2.2, weather: (dt, w) => s.weather(dt, w) }); this.segs.push(s); });
+    const { scene, terrain } = this; const y = 0; this.water = new THREE.Mesh(new THREE.PlaneGeometry(40, 9).rotateX(-Math.PI / 2), waterMaterial()); this.water.position.set(0, -0.78, -24.5); this.water.material.uniforms.uRain.value = 0.2; scene.add(this.water);
+    const zs = [-20.4, -24.5, -28.6]; zs.forEach((z, i) => { const s = new IceSeg(scene, terrain, 0, z, 6, 4.3, -0.5) /* level with the bottom of the banks, so walking onto the ice is a small step, not a lip you slip under */; this.weather.register({ pos: new THREE.Vector3(0, y, z), radius: 2.2, weather: (dt, w) => s.weather(dt, w) }); this.segs.push(s); });
   }
   forest() {
     const { A, scene, terrain, q } = this, r = rng(14); const av = [[0, 17, 4], [-12, 6, 5], [0, -16, 4], [-6, -8, 4], [14, -6, 3.5], [10, 6, 5], [0, -21, 6]];
