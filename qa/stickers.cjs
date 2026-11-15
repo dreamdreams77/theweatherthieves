@@ -76,7 +76,7 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) 
 
   // --- phone portrait 360 px, real touch
   ({ browser, page, logs } = await launch({ mobile: true, w: 360, h: 740 })); ev = (f, a) => page.evaluate(f, a);
-  await page.tap('#begin'); await sleep(400); for (let i = 0; i < 40 && (await ev(() => __game.ui.dlg.active)); i++) { await page.tap('#dlg'); await sleep(110); }
+  await page.tap('#begin'); await sleep(400); for (let i = 0; i < 40 && (await ev(() => __game.ui.dlg.active)); i++) { const b = await page.locator('#dlg').boundingBox(); await page.touchscreen.tap(b.x + b.width / 2, b.y + 12); await sleep(110); }
   await ev(() => __game.arcade.openMenu()); await sleep(200);
   r = await ev(() => { const m = document.getElementById('arcMenu').getBoundingClientRect(); return { top: m.top, bottom: m.bottom, w: m.width, scroll: document.getElementById('arcMenu').scrollHeight > document.getElementById('arcMenu').clientHeight }; });
   check('phone: arcade menu fits the screen (scrolls if needed)', r.top >= 0 && r.bottom <= 740 && r.w <= 360, JSON.stringify(r));

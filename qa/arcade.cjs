@@ -10,7 +10,7 @@ const SH = 'qa/shots/';
   check('arcade booth stands beside the trial stone', d > 2 && d < 8, String(d));
   await page.keyboard.press('KeyF'); await page.waitForFunction(() => __game.arcade.open, null, { timeout: 20000 });
   const m = await ev(() => ({ open: __game.arcade.open, items: [...document.querySelectorAll('.arcGame b')].map((b) => b.textContent) }));
-  check('F at the booth opens the arcade menu with 3 games', m.open && m.items.length === 3, JSON.stringify(m.items));
+  check('F at the booth opens the arcade menu (Drizzle Dash, Gust Glide, Weather Pairs first)', m.open && m.items.length >= 3 && /Drizzle Dash/.test(m.items[0]) && /Gust Glide/.test(m.items[1]) && /Weather Pairs/.test(m.items[2]), JSON.stringify(m.items));
   const p0 = await ev(() => __game.player.pos.toArray()); await page.keyboard.down('KeyW'); await sleep(400); await page.keyboard.up('KeyW'); const p1 = await ev(() => __game.player.pos.toArray());
   check('the world is frozen while the arcade is open', Math.hypot(p1[0] - p0[0], p1[2] - p0[2]) < 0.01);
   await page.screenshot({ path: SH + 'arcade-menu.png', timeout: 120000 });

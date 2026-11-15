@@ -45,7 +45,8 @@ const { thumb } = require('./thumb.cjs');
   // 5. snow on the three drifts around the jar (swap to a fuller cloud when one runs low)
   const zones = await ev(() => __game.world.jzones.map((z) => [z.x, z.base, z.z]));
   for (let i = 0; i < 3; i++) { const z = zones[i]; const best = await ev(() => { const g = __game; return g.weather.clouds.filter((c) => !c.personal && !c.fixed).sort((a, b) => b.moisture - a.moisture)[0].id; });
-    if ((await T.S()).held !== best) { await T.tool(0); if ((await T.S()).held) await T.tapSel('#bUse'); await T.grabCloud(best); }
+    if ((await T.S()).held !== best) { await T.tool(0); if ((await T.S()).held) await T.tapSel('#bUse'); log('grab', best, await T.grabCloud(best)); }
+    log('zone', i, z, await ev((id) => { const c = __game.weather.clouds.find((c) => c.id === id); return { m: +c.moisture.toFixed(2), pos: c.pos.toArray().map((x) => +x.toFixed(1)), held: __game.tools.held?.id }; }, best));
     const vs = await T.viewSpot(z, 3, 8); if (vs) await T.walkTo(vs[0], vs[1], 1.0); await T.tool(4);
     await T.holdUse(z, (i) => __game.world.jzones[i].count >= 2.9, 60000, i); log('drift', i, await ev((i) => +__game.world.jzones[i].count.toFixed(2), i), 'cloud', best); }
   const jz = await ev(() => __game.world.jzones.map((z) => +z.count.toFixed(2)));
