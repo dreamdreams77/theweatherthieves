@@ -52,8 +52,8 @@ export class Tools {
     const tool = this.tool; const origin = _o.set(p.pos.x, p.pos.y + 1.0, p.pos.z);
     // only the Cloud tool aims *at* clouds; every other tool aims at the ground behind them
     if (tool !== 'cloud' && aim.hitType === 'cloud' && aim.groundPoint && !g.debugAim) { aim.point.copy(aim.groundPoint); aim.ground = true; }
-    // the cloud you are carrying never blocks your own aim (otherwise it would follow itself and never move)
-    if (this.held && aim.hit === this.held && aim.groundPoint && !g.debugAim) { aim.point.copy(aim.groundPoint); aim.ground = true; }
+    // while carrying a cloud, other clouds (or the carried one) never block where you are placing it — e.g. Fen's little cloud in front of Juno
+    if (this.held && aim.hitType === 'cloud' && aim.groundPoint && !g.debugAim) { aim.point.copy(aim.groundPoint); aim.ground = true; }
     // --- cloud grabbing is available with the Cloud tool AND by clicking any cloud
     const clickCloud = useJust && aim.hitType === 'cloud' && (tool === 'cloud' || tool === 'rain');
     if (clickCloud && !this.held) this.grab(aim.hit);
