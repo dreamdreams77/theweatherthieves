@@ -49,7 +49,8 @@ async function thumb(page, ctx) {
   const tool = (i) => tapSel(`.tool[data-i="${i}"]`);
   // grab a cloud: Cloud tool, then tap the cloud on screen (turn the camera first if it is off-screen)
   const grabCloud = async (id) => { await tool(0); for (let i = 0; i < 8; i++) { const cp = await ev((id) => __game.weather.clouds.find((c) => c.id === id)?.pos.toArray(), id); let s = await proj(cp);
-      if (!(s.z < 1 && Math.abs(s.nx) < 0.45 && s.ny > -0.2 && s.ny < 0.7)) { await aimAt(cp, 0.5, 6); s = await proj(cp); } // keep clear of the toolbar, stick and buttons
+      if (!(s.z < 1 && Math.abs(s.nx) < 0.45 && s.ny > -0.2 && s.ny < 0.7)) { await aimAt(cp, 0.5, 6); s = await proj(cp); }
+      if (s.ny > 0.7 || s.y < 0) { const me = await S(); const dx = me.p[0] - cp[0], dz = me.p[2] - cp[2], d = Math.hypot(dx, dz) || 1; if (process.env.DBG) console.log('    step back from', id); await walkTo(me.p[0] + (dx / d) * 6, me.p[2] + (dz / d) * 6, 1.2, 8000); await aimAt(cp, 0.5, 6); s = await proj(cp); } /* too high overhead: step back so it comes into view */ // keep clear of the toolbar, stick and buttons
       if (process.env.DBG) console.log('    grab', id, JSON.stringify({ cp: cp.map((x) => +x.toFixed(1)), s: [s.x | 0, s.y | 0, +s.z.toFixed(2)] }));
       await tap(s.x, s.y); await sleep(300); if ((await S()).held === id) return true; } return false; };
   const until = async (fn, ms, every = 150, arg) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await ev(() => __game.ui.dlg.active)) await flush(); if (await ev(fn, arg)) return true; await sleep(every); } return false; };

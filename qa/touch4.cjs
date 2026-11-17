@@ -6,7 +6,7 @@ const { thumb } = require('./thumb.cjs');
   const { browser, ctx, page, logs } = await launch({ mobile: true, w: 844, h: 390 });
   await page.evaluate(() => localStorage.setItem('weather-thieves-progress-v1', JSON.stringify({ chapter: 4, unlocked: 4, done: [1, 2, 3], memories: [], flags: {} })));
   await page.reload(); await page.waitForFunction(() => window.__game && __game.state === 'title', null, { timeout: 120000 });
-  const T = await thumb(page, ctx), ev = T.ev; const P = (k) => ev((k) => __game.world[k].pos.toArray(), k);
+  const T = await thumb(page, ctx), ev = T.ev; const P = (k) => ev((k) => { const v = __game.world[k]; return (v.pos || v).toArray(); }, k);
   await T.tapSel('#begin'); await page.waitForFunction(() => __game.chapterNo === 4 && __game.state !== 'loading' && !document.getElementById('chapterCard').classList.contains('show'), null, { timeout: 90000 }); await sleep(800); await T.flush();
   check('Continue drops a touch player into chapter 4', await ev(() => __game.chapterNo === 4 && __game.state === 'play'));
   await T.calibrate();
