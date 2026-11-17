@@ -34,7 +34,10 @@ Tools: **Cloud** picks up any cloud (click again to drop) · **Rain** rains from
 
 ## Extras
 - **Weather Trials**: a glowing stone near each chapter's start runs a timed challenge (Bloom Rush, Pinwheel Parade, Freeze Frame, Spark Chase). Gold / silver / bronze medals and best times appear in the pause menu.
-- **Puffkin Arcade**: a striped booth in every chapter (or *Play mini games* in the pause menu) with three clay-style mini games: **Drizzle Dash** (catch rain, dodge hail), **Gust Glide** (one-tap gusts through a storm) and **Weather Pairs** (memory match). Keyboard, mouse and touch; best scores are saved.
+- **Opening scene**: a skippable 20-second clay cinematic of the weather being stolen, on a new game (replay it from the pause menu).
+- **Puffkin Arcade**: a striped booth in every chapter (or *Play mini games* in the pause menu) with six clay-style mini games: **Drizzle Dash** (catch rain, dodge hail), **Gust Glide** (one-tap gusts through a storm), **Weather Pairs** (memory match), **Rainbow Rhythm**, **Snowball Stack** and **Lightning Link**. Keyboard, mouse and touch; best scores and medals are saved.
+- **Sticker Book**: 34 clay stickers earned from arcade medals, trial medals, almanac combos, chapters and memories.
+- **Installable app**: add it to your home screen (Android prompt / iOS Share → Add to Home Screen); it runs full-screen and plays offline. Phones vibrate on grabs, lightning, medals and more (toggle in Settings).
 - **Claymation look** (inspired by HollowTide): thumbprint relief, a 12 fps "boil", characters posed on twos, warm studio light and satin sheen. Anti-aliased post-processing (4× MSAA) with a gentle sharpen and soft rounded clay grass tufts.
 - **Settings**: volume, music, reduce motion (no shake/flash/boil), larger text, invert Y, glow & film effects, claymation look, on-twos posing, classic thin grass.
 
@@ -60,10 +63,14 @@ node qa/ch2.cjs / ch3.cjs / ch4.cjs   # chapter mechanics (drive the real update
 node qa/depth.cjs         # pause/settings, chapter select, mid-chapter save + Continue, almanac
 node qa/trials.cjs        # weather trials + Ask Fen + glow toggle
 node qa/arcade.cjs        # arcade booth and all three mini games (keyboard, mouse, touch)
+node qa/pwa.cjs           # install manifest + icons, offline service worker (boots and plays offline), vibration
+node qa/opening.cjs       # opening cinematic: plays once, skip, no replay on Continue
+node qa/stickers.cjs      # new arcade games + sticker book unlocks
+node qa/touch2.cjs / touch3.cjs / touch4.cjs   # chapters 2-4 start to finish with REAL TOUCH ONLY (joystick, camera drags, buttons)
 node qa/allshots.cjs      # screenshots of every chapter
 ```
 `?norender=1` skips drawing so the headless (software-GL) browser can play in real time; `__game.renderOnce()` takes pictures.
 
 ## Known limitations
-- Chapters 2–4 are verified by mechanics tests, not by a full keyboard/mouse run like Chapter 1.
+- Chapter 1 has a full keyboard/mouse run; chapters 2–4 have full real-touch runs (plus mechanics tests).
 - Headless tests run on software GL, so real-GPU frame rates were not measured; draw calls are ~400–750 per frame, with distance culling and adaptive resolution.
