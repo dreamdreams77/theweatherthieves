@@ -65,7 +65,7 @@ export class Link {
       if (Math.sin(this.t * 17 + c.s) > 0.5) { ctx.strokeStyle = COLS[c.c]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x - s * 0.2, y + s * 0.55); ctx.lineTo(x + s * 0.05, y + s * 0.85); ctx.lineTo(x - s * 0.1, y + s * 0.95); ctx.lineTo(x + s * 0.15, y + s * 1.25); ctx.stroke(); }
     }
     for (const f of this.fx) { if (f.puff) { ctx.globalAlpha = f.t; blob(ctx, f.x, f.y, u * 0.5, u * 0.4, '#8a7a98', f.x, { noGlint: true, noPrint: true }); ctx.globalAlpha = 1; } else text(ctx, f.s, f.x, f.y, u * 0.75, f.c); }
-    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, W - u * 2, u * 1.3, u * 0.85); text(ctx, '⚡'.repeat(Math.max(0, this.lives)), u * 2.4, u * 1.3, u * 0.85, '#ffe14a');
+    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, Math.min(W - u * 2, W - 74), u * 1.3, u * 0.85); text(ctx, '⚡'.repeat(Math.max(0, this.lives)), u * 2.4, u * 1.3, u * 0.85, '#ffe14a');
     if (this.t < 3) text(ctx, 'Match each cloud to its rod!', W / 2, H * 0.66, u * 0.85, '#fff6c0');
   }
 }

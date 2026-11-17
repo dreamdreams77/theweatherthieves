@@ -64,7 +64,7 @@ export class Stack {
     if (this.state === 'aim' && !this.dead) { ctx.strokeStyle = 'rgba(80,90,130,.25)'; ctx.setLineDash([4, 8]); ctx.beginPath(); ctx.moveTo(cx + sxw * u, hy + u * R); ctx.lineTo(cx + sxw * u, sy(this.landY())); ctx.stroke(); ctx.setLineDash([]); this.ball(ctx, cx + sxw * u, hy, u, 99, false, false); }
     if (this.drop) this.ball(ctx, cx + this.drop.x * u, sy(this.drop.y), u, this.drop.s, false, false);
     for (const f of this.fx) text(ctx, f.s, cx + f.x * u, sy(f.y) + (f.t - 0.8) * 30, u * 0.8, f.c);
-    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, W - u * 2, u * 1.3, u * 0.85); text(ctx, '❄'.repeat(Math.max(0, this.lives)), u * 2.2, u * 1.3, u * 0.9, '#bfe4ff');
+    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, Math.min(W - u * 2, W - 74), u * 1.3, u * 0.85); text(ctx, '❄'.repeat(Math.max(0, this.lives)), u * 2.2, u * 1.3, u * 0.9, '#bfe4ff');
     text(ctx, `height ${this.height}`, u * 0.8, u * 2.7, u * 0.7, '#ffffff', 'left');
     if (this.t < 2.5 && !this.balls.length) text(ctx, 'Tap / Space to drop!', W / 2, H * 0.62, u * 0.95, '#fff6c0');
   }

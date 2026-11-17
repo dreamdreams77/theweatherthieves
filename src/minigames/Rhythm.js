@@ -59,7 +59,7 @@ export class Rhythm {
     // Puffkin conductor bobbing to the beat
     const bob = Math.abs(Math.sin((Math.PI * Math.max(0, this.t)) / BEAT)); blob(ctx, u * 2.4, H * 0.92 - bob * u * 0.8, u * 1.1, u * (0.95 + bob * 0.1), '#ffb3c7', 5); eyes(ctx, u * 2.5, H * 0.92 - bob * u * 0.8 - u * 0.1, u * 0.25, 1);
     for (const f of this.fx) text(ctx, f.s, f.x, f.y, u * 0.75, f.c);
-    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(LEN - Math.max(0, this.t)))}s`, W - u * 2, u * 1.3, u * 0.85);
+    text(ctx, `${this.score}`, W / 2, u * 1.3, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(LEN - Math.max(0, this.t)))}s`, Math.min(W - u * 2, W - 74), u * 1.3, u * 0.85);
     if (this.combo >= 4) text(ctx, `streak ${this.combo}  ×${this.mult()}`, u * 0.8, u * 1.3, u * 0.75, '#ffe680', 'left');
     if (this.t < 0.4) text(ctx, this.t < -0.5 ? 'Get ready…' : 'Tap on the puddles!', W / 2, H * 0.45, u * 1.1, '#fff6c0');
   }

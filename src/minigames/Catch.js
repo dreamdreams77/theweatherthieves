@@ -20,6 +20,6 @@ export class Catch {
     const bx = this.x * W, by = 0.86 * H, sh = this.hurt > 0 ? Math.sin(this.t * 60) * 4 : 0;
     blob(ctx, bx + sh, by, u * 1.8, u * 1.0, this.hurt > 0 ? '#9a8aa8' : '#c9c2d4', 3); eyes(ctx, bx + sh, by - u * 0.15, u * 0.32, (this.items[0]?.x ?? 0.5) - this.x > 0 ? 1 : -1, this.hurt > 0);
     for (const p of this.pops) text(ctx, p.s, p.x, p.y, u * 0.9, '#fff6c0');
-    text(ctx, `${this.score}`, W / 2, u * 1.4, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, W - u * 2, u * 1.4, u * 0.9); text(ctx, '♥'.repeat(Math.max(0, this.lives)), u * 2.5, u * 1.4, u * 0.9, '#ff8aa0');
+    text(ctx, `${this.score}`, W / 2, u * 1.4, u * 1.4); text(ctx, `${Math.max(0, Math.ceil(this.time))}s`, Math.min(W - u * 2, W - 74), u * 1.4, u * 0.9); text(ctx, '♥'.repeat(Math.max(0, this.lives)), u * 2.5, u * 1.4, u * 0.9, '#ff8aa0');
   }
 }

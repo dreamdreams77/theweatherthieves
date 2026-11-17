@@ -23,7 +23,7 @@ const { thumb } = require('./thumb.cjs');
   await T.holdUse(ramp, () => __game.narr.flags.ramp || __game.world.ramp.count >= 0.98, 45000);
   check('Frost on a carried cloud makes snow that piles into a ramp', await ev(() => __game.narr.flags.ramp || __game.world.ramp.count >= 0.98), 'ramp=' + (await ev(() => __game.world.ramp.count.toFixed(2))));
   await T.tool(0); await T.tapSel('#bUse'); await sleep(200);
-  await T.walkTo(ramp[0], ramp[2] + 0.2, 0.8, 15000); await T.walkTo(-4, -47, 1.0, 20000);
+  await T.walkTo(ramp[0], ramp[2] + 0.2, 0.8, 15000); await T.walkTo(-4, -47, 1.0, 20000); await T.until(() => Math.abs(__game.player.pos.y - __game.world.ledgeY) < 0.6 && __game.player.grounded, 10000);
   const ledge = await ev(() => [__game.player.pos.y, __game.world.ledgeY]); check('up the snow ramp onto the ledge', Math.abs(ledge[0] - ledge[1]) < 0.6, JSON.stringify(ledge));
   // 3. melt the sled's ice with the mirror (Sun tool)
   const ice = await W('ice'); await T.tool(3); await T.walkTo(-7, -49, 1.0);
