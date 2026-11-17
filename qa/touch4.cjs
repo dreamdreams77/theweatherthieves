@@ -14,7 +14,7 @@ const { thumb } = require('./thumb.cjs');
   const strike = async (cloud, rodKey) => { const rod = await P(rodKey); const ok = await T.grabCloud(cloud); log('grab', cloud, ok);
     await T.tool(0); for (let k = 0; k < 6 && (await ev(() => (__game.tools.held?.charge || 0) < 0.85)); k++) await T.holdBtn('#bMinus', 1200);
     log('charge', await ev(() => +(__game.tools.held?.charge || 0).toFixed(2)));
-    await T.aimAt(await T.surf(rod)); await T.until((k) => __game.world[k].latched, 20000, 150, rodKey); const done = await ev((k) => __game.world[k].latched, rodKey);
+    await T.aimAt(await T.surf(rod)); await T.until((k) => __game.world[k].latched, 20000, 150, rodKey); log('rod', rodKey, await ev((k) => { const g = __game, r = g.world[k], c = g.tools.held, f = (v) => v.toArray().map((x) => +x.toFixed(1)); return { tip: f(r.tip), cl: c && f(c.pos), ch: c && +c.charge.toFixed(2), st: c && +c.stretchT.toFixed(2), aim: f(g.tools.aim.point), held: c?.id }; }, rodKey)); const done = await ev((k) => __game.world[k].latched, rodKey);
     if ((await T.S()).held) await T.tapSel('#bUse'); await sleep(200); return done; };
   // 1. rod A in the courtyard
   const rodA = await P('rodA'); await T.walkTo(rodA[0] + 3, rodA[2] + 5, 1.2);
