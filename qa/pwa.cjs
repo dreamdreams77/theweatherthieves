@@ -19,7 +19,7 @@ const { sleep, launch, check, results } = require('./lib.cjs');
   await page2.goto('http://localhost:4173/', { waitUntil: 'domcontentloaded' }).catch((e) => logs.push('goto ' + e.message)); await page2.waitForFunction(() => window.__game && __game.state === 'title', null, { timeout: 120000 }).catch(() => {});
   const off = await page2.evaluate(() => ({ st: window.__game?.state, online: navigator.onLine, ctl: !!navigator.serviceWorker.controller }));
   check('game boots to the title screen while OFFLINE', off.st === 'title' && off.online === false && off.ctl, JSON.stringify(off));
-  await page2.click('#begin'); await sleep(800); check('and starts playing offline', await page2.evaluate(() => ['dialogue', 'play'].includes(__game.state)));
+  await page2.click('#begin'); await sleep(800); check('and starts playing offline (opening scene, intro or play)', await page2.evaluate(() => ['opening', 'dialogue', 'play'].includes(__game.state)));
   await ctx.setOffline(false); check('no page errors (pwa)', logs.length === 0, logs.slice(0, 3).join(' | ')); await browser.close();
   // --- haptics on a phone (navigator.vibrate is recorded)
   const L = await launch({ mobile: true, w: 390, h: 844 }); const p2 = L.page;

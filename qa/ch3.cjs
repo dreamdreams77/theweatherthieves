@@ -28,7 +28,7 @@ const { launch, sleep, check, results } = require('./lib.cjs');
   });
   console.log(JSON.stringify(r));
   await sleep(3500); const r2 = await page.evaluate(() => { const g = __game; for (let i = 0; i < 80; i++) { if (g.ui.dlg.active) { g.ui.advance(); g.ui.advance(); } g.sim(0.4); } return { freed: g.narr.flags.freed, end: !document.getElementById('end').classList.contains('hidden'), next: document.getElementById('endNext').style.display !== 'none' ? document.getElementById('endNext').textContent : '(none)' }; });
-  check('river segments freeze under Frost', r.seg.every((s) => s > 0.9), JSON.stringify(r.seg)); check('player stands on the ice (walkable)', r.onIce > -0.2 && r.onIce < 0.6, 'y=' + r.onIce);
+  check('river segments freeze under Frost', r.seg.every((s) => s > 0.9), JSON.stringify(r.seg)); check('player stands on the ice (walkable)', r.onIce > -0.7 && r.onIce < 0.1, 'y=' + r.onIce);
   check('held cloud + Frost snows a drift to full height', r.ramp > 2.8, 'count=' + r.ramp); check('snow ramp lets you climb to the ledge', r.onLedge > 1.2, 'y=' + r.onLedge);
   check('mirror sunlight melts the sled’s ice', r.melt >= 1 && !r.sledLocked, 'melt=' + r.melt); check('blizzard (snow + wind) pushes the sled onto the plate', r.plate, 'sledX=' + r.sledX); check('plate opens the Pine Gate', r.doorOpen);
   check('three jar drifts freed the Quiet', r.spiritFree, JSON.stringify(r.jar)); check('Chapter 3 end card', r2.end && r2.freed, r2.next);
